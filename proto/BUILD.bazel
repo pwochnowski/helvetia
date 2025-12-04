@@ -1,7 +1,8 @@
-
-load("@protobuf//bazel:java_proto_library.bzl", "java_proto_library")
 load("@protobuf//bazel:proto_library.bzl", "proto_library")
 
+# -------------------------
+# User
+# -------------------------
 proto_library(
     name = "user_proto",
     srcs = ["user.proto"],
@@ -10,5 +11,80 @@ proto_library(
 java_proto_library(
     name = "user_proto_java",
     deps = [":user_proto"],
-    visibility = ["//visibility:public"]
+    visibility = ["//visibility:public"],
+)
+
+# -------------------------
+# Article
+# -------------------------
+proto_library(
+    name = "article_proto",
+    srcs = ["article.proto"],
+)
+
+java_proto_library(
+    name = "article_proto_java",
+    deps = [":article_proto"],
+    visibility = ["//visibility:public"],
+)
+
+# -------------------------
+# Read
+# -------------------------
+proto_library(
+    name = "read_proto",
+    srcs = ["read.proto"],
+)
+
+java_proto_library(
+    name = "read_proto_java",
+    deps = [":read_proto"],
+    visibility = ["//visibility:public"],
+)
+
+# -------------------------
+# BeRead
+# -------------------------
+proto_library(
+    name = "be_read_proto",
+    srcs = ["be_read.proto"],
+)
+
+java_proto_library(
+    name = "be_read_proto_java",
+    deps = [":be_read_proto"],
+    visibility = ["//visibility:public"],
+)
+
+# -------------------------
+# PopularRank
+# -------------------------
+proto_library(
+    name = "popular_rank_proto",
+    srcs = ["popular_rank.proto"],
+)
+
+java_proto_library(
+    name = "popular_rank_proto_java",
+    deps = [":popular_rank_proto"],
+    visibility = ["//visibility:public"],
+)
+
+# One proto_library that depends on all individual ones
+proto_library(
+    name = "all_proto",
+    deps = [
+        ":user_proto",
+        ":article_proto",
+        ":read_proto",
+        ":be_read_proto",
+        ":popular_rank_proto",
+    ],
+)
+
+# One java_proto_library for everything
+java_proto_library(
+    name = "all_proto_java",
+    deps = [":all_proto"],
+    visibility = ["//visibility:public"],
 )

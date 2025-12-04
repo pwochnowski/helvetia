@@ -1,0 +1,18 @@
+syntax = "proto3";
+
+package helvetia;
+
+option java_package = "helvetia";
+option java_multiple_files = true;
+
+message Read {
+  string id = 1;
+  int64 timestamp = 2;
+  string uid = 3;
+  string aid = 4;
+  int32 readTimeLength = 5;
+  string aggreeOrNot = 6;     // "1" or "0"
+  string commentOrNot = 7;    // "1" or "0"
+  string shareOrNot = 8;      // "1" or "0"
+  string commentDetail = 9;
+}

@@ -1,0 +1,21 @@
+syntax = "proto3";
+
+package helvetia;
+
+option java_package = "helvetia";
+option java_multiple_files = true;
+
+message Article {
+  string id = 1;
+  int64 timestamp = 2;
+  string aid = 3;
+  string title = 4;
+  string category = 5;
+  string abstract = 6;
+  string articleTags = 7;
+  string authors = 8;
+  string language = 9;
+  string text = 10;
+  string image = 11;
+  string video = 12;
+}
