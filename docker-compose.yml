@@ -1,0 +1,22 @@
+services:
+  db:
+    image: helvetia/postgres:dev
+    container_name: helvetia-db
+    environment:
+      POSTGRES_USER: helvetia
+      POSTGRES_PASSWORD: helvetia
+      POSTGRES_DB: helvetia
+    ports:
+      - "5432:5432"       # for local dev; optional
+    networks:
+      - helvnet
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+      - ./docker/postgres/logical:/docker-entrypoint-initdb.d/logical
+      - ./docker/postgres/init.sql:/docker-entrypoint-initdb.d/init.sql
+
+volumes:
+  pgdata:
+
+networks:
+  helvnet:

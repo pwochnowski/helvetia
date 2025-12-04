@@ -1,0 +1,18 @@
+# Bazel
+/bazel-*
+
+# IDE
+/.idea/
+/.vscode/
+
+# Bzlmod
+/MODULE.bazel.lock
+
+# OS cruft
+.DS_Store
+*.swp
+*.swo
+
+# Local docker data (if exists)
+docker/postgres/pgdata/
+

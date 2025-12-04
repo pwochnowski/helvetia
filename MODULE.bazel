@@ -1,0 +1,29 @@
+module(name = "helvetia")
+
+bazel_dep(name = "protobuf", version = "33.1")
+
+bazel_dep(name = "rules_java", version = "9.0.3")
+bazel_dep(name = "rules_python", version = "1.7.0")
+
+# Add rules_jvm_external manually (not in BCR!)
+bazel_dep(name = "rules_jvm_external", version = "6.9")
+maven = use_extension("@rules_jvm_external//:extensions.bzl", "maven")
+maven.install(
+    artifacts = [
+        # This line is an example coordinate, you'd copy-paste your actual dependencies here
+        # from your build.gradle or pom.xml file.
+        "org.postgresql:postgresql:42.7.3",
+
+        "junit:junit:4.13.2",
+
+          # --- JUnit Jupiter (JUnit 5) ---
+#         "org.junit.jupiter:junit-jupiter-api:5.10.2",
+#         "org.junit.jupiter:junit-jupiter-engine:5.10.2",
+
+          # --- Testcontainers (your test uses it) ---
+        "org.testcontainers:testcontainers:1.19.7",
+        "org.testcontainers:postgresql:1.19.7",
+
+    ],
+)
+use_repo(maven, "maven")

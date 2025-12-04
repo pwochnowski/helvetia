@@ -1,0 +1,23 @@
+load("@rules_java//java:defs.bzl", "java_test")
+
+java_test(
+    name = "UserInsertTest",
+    srcs = ["helvetia/UserInsertTest.java"],
+    test_class = "helvetia.UserInsertTest",
+    deps = [
+        "//proto:user_proto_java",
+
+         # JUnit 4
+        "@maven//:junit_junit",
+
+        "@maven//:org_postgresql_postgresql",
+
+        "@maven//:org_testcontainers_postgresql",
+        "@maven//:org_testcontainers_testcontainers",
+    ],
+    env = {
+        "TESTCONTAINERS_RYUK_DISABLED": "true",
+        "DOCKER_HOST": "unix:///Users/paulw/.colima/default/docker.sock",
+    },
+    tags = ["no-sandbox"]   # Required for Testcontainers to work on macOS/Linux
+)

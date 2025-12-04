@@ -1,0 +1,24 @@
+syntax = "proto3";
+
+package helvetia;
+
+option java_package = "helvetia";
+option java_multiple_files = true;
+
+
+message User {
+  string id = 1;
+  int64 timestamp = 2;         // assuming epoch millis
+  string uid = 3;
+  string name = 4;
+  string gender = 5;
+  string email = 6;
+  string phone = 7;
+  string dept = 8;
+  string grade = 9;
+  string language = 10;
+  string region = 11;
+  string role = 12;
+  string preferTags = 13;
+  string obtainedCredits = 14;
+}
