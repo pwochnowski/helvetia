@@ -15,6 +15,21 @@ services:
       - ./docker/postgres/logical:/docker-entrypoint-initdb.d/logical
       - ./docker/postgres/init.sql:/docker-entrypoint-initdb.d/init.sql
 
+  app:
+    image: helvetia/server:latest
+    container_name: helvetia-app
+    ports:
+      - "8080:8080"       # for local dev; optional
+    depends_on:
+      - db
+    environment:
+      BIND_ADDR: "0.0.0.0"
+      DB_URL: "jdbc:postgresql://db:5432/helvetia"
+      DB_USER: "helvetia"
+      DB_PASS: "helvetia"
+    networks:
+      - helvnet
+
 volumes:
   pgdata:
 

@@ -4,10 +4,13 @@ load("@rules_java//java:defs.bzl", "java_binary")
 
 java_binary(
     name = "server",
-    srcs = glob(["src/main/java/**/*.java"]),
-    main_class = "helvetia.Server",
+    srcs = glob(["src/main/java/main/*.java"]),
+    main_class = "helvetia.main.Server",
     deps = [
+        "//app:dao",
+        "//proto:user_proto_java",
         "@maven//:com_sparkjava_spark_core",
+        "@maven//:com_zaxxer_HikariCP",
     ],
 )
 
