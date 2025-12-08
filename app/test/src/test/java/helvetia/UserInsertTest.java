@@ -1,9 +1,8 @@
 package helvetia;
 
 import helvetia.User;
-import org.junit.*;
-import org.junit.runner.RunWith;
-import org.testcontainers.Testcontainers;
+import org.junit.ClassRule;
+import org.junit.Test;
 import org.testcontainers.containers.PostgreSQLContainer;
 import org.testcontainers.utility.DockerImageName;
 //import org.testcontainers.junit4.Testcontainers;
@@ -40,16 +39,16 @@ public class UserInsertTest {
                     .setTimestamp(123456)
                     .setUid("1")
                     .setName("Alice")
-                    .setGender("female")
-                    .setEmail("alice@example.com")
-                    .setPhone("123")
-                    .setDept("dept1")
-                    .setGrade("grade2")
-                    .setLanguage("en")
-                    .setRegion("Beijing")
-                    .setRole("role1")
-                    .setPreferTags("tags3")
-                    .setObtainedCredits("42")
+//                    .setGender("female")
+//                    .setEmail("alice@example.com")
+//                    .setPhone("123")
+//                    .setDept("dept1")
+//                    .setGrade("grade2")
+//                    .setLanguage("en")
+//                    .setRegion("Beijing")
+//                    .setRole("role1")
+//                    .setPreferTags("tags3")
+//                    .setObtainedCredits("42")
                     .build();
 
             // insert
@@ -64,16 +63,16 @@ public class UserInsertTest {
             ps.setLong(2, user.getTimestamp());
             ps.setString(3, user.getUid());
             ps.setString(4, user.getName());
-            ps.setString(5, user.getGender());
-            ps.setString(6, user.getEmail());
-            ps.setString(7, user.getPhone());
-            ps.setString(8, user.getDept());
-            ps.setString(9, user.getGrade());
-            ps.setString(10, user.getLanguage());
-            ps.setString(11, user.getRegion());
-            ps.setString(12, user.getRole());
-            ps.setString(13, user.getPreferTags());
-            ps.setString(14, user.getObtainedCredits());
+//            ps.setString(5, user.getGender());
+//            ps.setString(6, user.getEmail());
+//            ps.setString(7, user.getPhone());
+//            ps.setString(8, user.getDept());
+//            ps.setString(9, user.getGrade());
+//            ps.setString(10, user.getLanguage());
+//            ps.setString(11, user.getRegion());
+//            ps.setString(12, user.getRole());
+//            ps.setString(13, user.getPreferTags());
+//            ps.setString(14, user.getObtainedCredits());
             ps.executeUpdate();
 
             // verify

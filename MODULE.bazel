@@ -25,6 +25,8 @@ maven.install(
         "org.testcontainers:postgresql:1.19.7",
 
         "com.sparkjava:spark-core:2.9.4",
+
+        "com.zaxxer:HikariCP:5.1.0",
     ],
 )
 use_repo(maven, "maven")

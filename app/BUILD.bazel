@@ -10,3 +10,13 @@ java_binary(
         "@maven//:com_sparkjava_spark_core",
     ],
 )
+
+java_library(
+    name = "dao",
+    srcs = glob(["src/main/java/dao/*.java"]),
+    deps = [
+        "//proto:user_proto_java",
+        "@maven//:org_postgresql_postgresql",
+    ],
+    visibility = ["//visibility:public"],
+)

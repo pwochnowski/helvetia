@@ -21,3 +21,22 @@ java_test(
     },
     tags = ["no-sandbox"]   # Required for Testcontainers to work on macOS/Linux
 )
+
+java_test(
+    name = "UserDaoTest",
+    srcs = ["helvetia/UserDaoTest.java"],
+    test_class = "helvetia.UserDaoTest",
+    deps = [
+        "//app:dao",
+        "//proto:user_proto_java",
+        "@maven//:org_testcontainers_testcontainers",
+        "@maven//:org_testcontainers_postgresql",
+        "@maven//:junit_junit",
+        "@maven//:org_postgresql_postgresql",
+        "@maven//:com_zaxxer_HikariCP",
+    ],
+     env = {
+        "TESTCONTAINERS_RYUK_DISABLED": "true",
+        "DOCKER_HOST": "unix:///Users/paulw/.colima/default/docker.sock",
+    },
+)
