@@ -16,9 +16,9 @@ maven.install(
 
         "junit:junit:4.13.2",
 
-          # --- JUnit Jupiter (JUnit 5) ---
-#         "org.junit.jupiter:junit-jupiter-api:5.10.2",
-#         "org.junit.jupiter:junit-jupiter-engine:5.10.2",
+        "org.apache.logging.log4j:log4j-api:2.22.1",
+        "org.apache.logging.log4j:log4j-core:2.22.1",
+        "org.apache.logging.log4j:log4j-slf4j2-impl:2.22.1",
 
           # --- Testcontainers (your test uses it) ---
         "org.testcontainers:testcontainers:1.19.7",

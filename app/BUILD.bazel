@@ -2,15 +2,28 @@ load("@rules_java//java:defs.bzl", "java_library", "java_binary")
 
 load("@rules_java//java:defs.bzl", "java_binary")
 
+# Use the deploy JAR which includes third-party deps
+java_binary(
+    name = "runserver",
+    main_class = "helvetia.main.Server",
+    data = [":server_deploy.jar"],
+    runtime_deps = [":server_deploy.jar"],
+)
+
 java_binary(
     name = "server",
     srcs = glob(["src/main/java/main/*.java"]),
     main_class = "helvetia.main.Server",
+    resources = glob(["src/main/resources/**"]),
+    resource_strip_prefix = "app/src/main/resources",
     deps = [
         "//app:dao",
         "//proto:user_proto_java",
         "@maven//:com_sparkjava_spark_core",
         "@maven//:com_zaxxer_HikariCP",
+        "@maven//:org_apache_logging_log4j_log4j_api",
+        "@maven//:org_apache_logging_log4j_log4j_core",
+        "@maven//:org_apache_logging_log4j_log4j_slf4j2_impl",
     ],
 )
 

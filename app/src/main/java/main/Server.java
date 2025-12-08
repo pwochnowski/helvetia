@@ -1,5 +1,8 @@
 package helvetia.main;
 
+import org.apache.logging.log4j.Level;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
 import com.zaxxer.hikari.HikariConfig;
 import helvetia.User;
 import helvetia.UserList;
@@ -10,6 +13,8 @@ import static spark.Spark.*;
 
 public class Server {
     private final DB db;
+    private static final Logger log = LogManager.getLogger(Server.class);
+
 
     public Server(DB db) {
         this.db = db;
