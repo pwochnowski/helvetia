@@ -1,19 +1,18 @@
 services:
   db:
-    image: helvetia/postgres:dev
+    image: helvetia/mysql:dev
     container_name: helvetia-db
     environment:
-      POSTGRES_USER: helvetia
-      POSTGRES_PASSWORD: helvetia
-      POSTGRES_DB: helvetia
+      MYSQL_ROOT_PASSWORD: helvetia
+      MYSQL_DATABASE: helvetia
+      MYSQL_USER: helvetia
+      MYSQL_PASSWORD: helvetia
     ports:
-      - "5432:5432"       # for local dev; optional
+      - "3306:3306"       # for local dev; optional
     networks:
       - helvnet
     volumes:
-      - pgdata:/var/lib/postgresql/data
-      - ./docker/postgres/logical:/docker-entrypoint-initdb.d/logical
-      - ./docker/postgres/init.sql:/docker-entrypoint-initdb.d/init.sql
+      - mysqldata:/var/lib/mysql
 
   app:
     image: helvetia/server:latest
@@ -24,14 +23,14 @@ services:
       - db
     environment:
       BIND_ADDR: "0.0.0.0"
-      DB_URL: "jdbc:postgresql://db:5432/helvetia"
+      DB_URL: "jdbc:mysql://db:3306/helvetia"
       DB_USER: "helvetia"
       DB_PASS: "helvetia"
     networks:
       - helvnet
 
 volumes:
-  pgdata:
+  mysqldata:
 
 networks:
   helvnet:

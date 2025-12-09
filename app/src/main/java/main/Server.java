@@ -26,10 +26,9 @@ public class Server {
 
         post("/users", (req, res) -> {
             User input = User.parseFrom(req.bodyAsBytes());
-            User created = dao.create(input);
+            dao.create(input);
 
-            res.type("application/x-protobuf");
-            return created.toByteArray();
+            return "";
         });
 
         get("/users/:id", (req, res) -> {
@@ -43,11 +42,9 @@ public class Server {
 
         put("/users/:id", (req, res) -> {
             User input = User.parseFrom(req.bodyAsBytes());
-            User updated = dao.update(input);
-            if (updated == null) halt(404);
-
-            res.type("application/x-protobuf");
-            return updated.toByteArray();
+            dao.update(input);
+//            if (updated == null) halt(404);
+            return "";
         });
 
         delete("/users/:id", (req, res) -> {
@@ -75,7 +72,7 @@ public class Server {
         // Read DB URL from environment, fallback to local default
         String dbUrl = System.getenv().getOrDefault(
                 "DB_URL",
-                "jdbc:postgresql://localhost:5432/helvetia"
+                "jdbc:mysql://localhost:3306/helvetia"
         );
         String dbUser = System.getenv().getOrDefault(
                 "DB_USER",

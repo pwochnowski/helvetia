@@ -1,7 +1,7 @@
-FROM postgres:16
+FROM mysql:8.0
 
-# Put logical schemas into the image
-COPY logical /docker-entrypoint-initdb.d/logical
+# MySQL runs .sql files in alphabetical order from this directory
+#COPY logical/*.sql /docker-entrypoint-initdb.d/
+COPY logical/user.sql /docker-entrypoint-initdb.d/
 
-# Put your node's init.sql into the image
-COPY init.sql /docker-entrypoint-initdb.d/
+#COPY init.sql /docker-entrypoint-initdb.d/

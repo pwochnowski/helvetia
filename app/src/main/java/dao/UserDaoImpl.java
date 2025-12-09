@@ -18,7 +18,7 @@ public class UserDaoImpl implements UserDao {
     User fromResultSet(ResultSet rs) throws SQLException {
         return User.newBuilder()
                 .setId(rs.getString("id"))
-                .setTimestamp(rs.getLong("timestamp"))
+                .setTimestamp(rs.getLong("ts"))
                 .setUid(rs.getString("uid"))
                 .setName(rs.getString("name"))
 //                .setGender(rs.getString("gender"))
@@ -35,26 +35,22 @@ public class UserDaoImpl implements UserDao {
     }
 
     @Override
-    public User create(User u) throws Exception {
+    public void create(User u) throws Exception {
         String sql = """
-            INSERT INTO users (id, timestamp, uid, name)
+            INSERT INTO users (id, ts, uid, name)
             VALUES (?, ?, ?, ?)
-            RETURNING id, timestamp, uid, name
         """;
 
         try (Connection conn = ds.getConnection();
             PreparedStatement st = conn.prepareStatement(sql)) {
             fillStatement(u, st);
-            System.out.println(st);
-            ResultSet rs =st.executeQuery();
-            rs.next();
-            return fromResultSet(rs);
+            st.executeUpdate();
         }
     }
 
     @Override
     public User get(long id) throws Exception {
-        String sql = "SELECT id, timestamp, uid, name FROM users WHERE id = ?";
+        String sql = "SELECT id, ts, uid, name FROM users WHERE id = ?";
 
         try (Connection conn = ds.getConnection();
              PreparedStatement st = conn.prepareStatement(sql)) {
@@ -68,22 +64,18 @@ public class UserDaoImpl implements UserDao {
     }
 
     @Override
-    public User update(User u) throws Exception {
+    public void update(User u) throws Exception {
         String sql = """
             UPDATE users
             SET name = ?
             WHERE id = ?
-            RETURNING id, timestamp, uid, name
         """;
 
         try (Connection conn = ds.getConnection();
              PreparedStatement st = conn.prepareStatement(sql)) {
             st.setString(1, u.getName());
             st.setString(2, u.getId());
-            ResultSet rs = st.executeQuery();
-            if (!rs.next()) return null;
-
-            return fromResultSet(rs);
+            st.executeUpdate();
         }
     }
 
@@ -118,7 +110,7 @@ public class UserDaoImpl implements UserDao {
 
     @Override
     public List<User> list() throws Exception {
-        String sql = "SELECT id, timestamp, uid, name FROM users ORDER BY id";
+        String sql = "SELECT id, ts, uid, name FROM users ORDER BY id";
 
         try (Connection conn = ds.getConnection();
              PreparedStatement st = conn.prepareStatement(sql)) {

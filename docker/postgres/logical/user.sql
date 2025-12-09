@@ -1,8 +1,8 @@
 CREATE TABLE users (
-   id TEXT PRIMARY KEY,
-   timestamp BIGINT,
-   uid TEXT,
-   name TEXT
+   id VARCHAR(255) PRIMARY KEY,
+   ts BIGINT,
+   uid VARCHAR(255),
+   name VARCHAR(255)
 --    gender TEXT,
 --    email TEXT,
 --    phone TEXT,
@@ -13,4 +13,4 @@ CREATE TABLE users (
 --    role TEXT,
 --    prefer_tags TEXT,
 --    obtained_credits TEXT
-);
+) ENGINE=InnoDB;

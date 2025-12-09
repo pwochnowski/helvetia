@@ -2,40 +2,40 @@ package helvetia;
 
 import com.zaxxer.hikari.HikariConfig;
 import com.zaxxer.hikari.HikariDataSource;
-import helvetia.User;
 import helvetia.dao.UserDao;
 import helvetia.dao.UserDaoImpl;
 import org.junit.Assert;
 import org.junit.AfterClass;
 import org.junit.BeforeClass;
 import org.junit.Test;
-import org.testcontainers.containers.PostgreSQLContainer;
+import org.testcontainers.containers.MySQLContainer;
 import org.testcontainers.utility.DockerImageName;
 
 public class UserDaoTest {
 
-    static PostgreSQLContainer<?> pg;
+    static MySQLContainer<?> myqsl;
     static UserDao dao;
 
     @BeforeClass
     public static void setup() throws Exception {
-        pg = new PostgreSQLContainer<>(
-                DockerImageName.parse("helvetia/postgres:dev")
-                        .asCompatibleSubstituteFor("postgres"))
+        //noinspection resource
+        myqsl = new MySQLContainer<>(
+                DockerImageName.parse("helvetia/mysql:dev")
+                        .asCompatibleSubstituteFor("mysql"))
                 .withDatabaseName("helvetia")
                 .withUsername("helvetia")
                 .withPassword("helvetia");
-        pg.start();
+        myqsl.start();
 
         HikariConfig cfg = new HikariConfig();
-        cfg.setJdbcUrl(pg.getJdbcUrl());
-        cfg.setUsername(pg.getUsername());
-        cfg.setPassword(pg.getPassword());
+        cfg.setJdbcUrl(myqsl.getJdbcUrl());
+        cfg.setUsername(myqsl.getUsername());
+        cfg.setPassword(myqsl.getPassword());
         dao = new UserDaoImpl(new HikariDataSource(cfg));
     }
 
     @AfterClass
-    public static void teardown() { pg.stop(); }
+    public static void teardown() { myqsl.stop(); }
 
     @Test
     public void fullWorkflow() throws Exception {
@@ -43,16 +43,16 @@ public class UserDaoTest {
         User u1 = User.newBuilder()
                 .setId("1").setTimestamp(1).setUid("u1").setName("Alice")
                 .build();
-        User created1 = dao.create(u1);
-        Assert.assertEquals(u1.getName(), created1.getName());
+        dao.create(u1);
+//        Assert.assertEquals(u1.getName(), created1.getName());
 
         // get
         User got = dao.get(1);
         Assert.assertEquals(u1.getName(), got.getName());
 
         // update
-        User updated = dao.update(
-                got.toBuilder().setName("Alice2").build());
+        dao.update(got.toBuilder().setName("Alice2").build());
+        User updated = dao.get(1);
         Assert.assertEquals("Alice2", updated.getName());
 
         // another insert

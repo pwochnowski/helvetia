@@ -12,7 +12,8 @@ maven.install(
     artifacts = [
         # This line is an example coordinate, you'd copy-paste your actual dependencies here
         # from your build.gradle or pom.xml file.
-        "org.postgresql:postgresql:42.7.3",
+        "com.mysql:mysql-connector-j:8.0.33",
+
 
         "junit:junit:4.13.2",
 
@@ -22,7 +23,7 @@ maven.install(
 
           # --- Testcontainers (your test uses it) ---
         "org.testcontainers:testcontainers:1.19.7",
-        "org.testcontainers:postgresql:1.19.7",
+        "org.testcontainers:mysql:1.19.7",
 
         "com.sparkjava:spark-core:2.9.4",
 
