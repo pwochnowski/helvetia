@@ -6,13 +6,14 @@ option java_package = "helvetia";
 option java_multiple_files = true;
 
 message Read {
-  string id = 1;
+  int64 id = 1;
   int64 timestamp = 2;
   string uid = 3;
   string aid = 4;
-  int32 readTimeLength = 5;
-  string aggreeOrNot = 6;     // "1" or "0"
-  string commentOrNot = 7;    // "1" or "0"
-  string shareOrNot = 8;      // "1" or "0"
+  string region = 5;
+  int32 readTimeLength = 6;
+  bool agreeOrNot = 7;
+  bool commentOrNot = 8;
   string commentDetail = 9;
+  bool shareOrNot = 10;
 }

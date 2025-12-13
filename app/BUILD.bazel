@@ -17,22 +17,13 @@ java_binary(
     resources = glob(["src/main/resources/**"]),
     resource_strip_prefix = "app/src/main/resources",
     deps = [
-        "//app:dao",
         "//proto:user_proto_java",
         "@maven//:com_sparkjava_spark_core",
         "@maven//:com_zaxxer_HikariCP",
         "@maven//:org_apache_logging_log4j_log4j_api",
         "@maven//:org_apache_logging_log4j_log4j_core",
         "@maven//:org_apache_logging_log4j_log4j_slf4j2_impl",
-    ],
-)
-
-java_library(
-    name = "dao",
-    srcs = glob(["src/main/java/dao/*.java"]),
-    deps = [
-        "//proto:user_proto_java",
         "@maven//:com_mysql_mysql_connector_j",
+        "@maven//:com_google_code_gson_gson",
     ],
-    visibility = ["//visibility:public"],
 )

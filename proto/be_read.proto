@@ -6,15 +6,16 @@ option java_package = "helvetia";
 option java_multiple_files = true;
 
 message BeRead {
-  string id = 1;
+  int64 id = 1;
   int64 timestamp = 2;
   string aid = 3;
-  int32 readNum = 4;
-  string readUidList = 5;
-  int32 commentNum = 6;
-  string commentUidList = 7;
-  int32 agreeNum = 8;
-  string agreeUidList = 9;
-  int32 shareNum = 10;
-  string shareUidList = 11;
+  string category = 4;
+  int32 readNum = 5;
+  repeated string readUidList = 6;
+  int32 commentNum = 7;
+  repeated string commentUidList = 8;
+  int32 agreeNum = 9;
+  repeated string agreeUidList = 10;
+  int32 shareNum = 11;
+  repeated string shareUidList = 12;
 }

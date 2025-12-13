@@ -1,4 +1,4 @@
-package helvetia.dao;
+package helvetia.main;
 
 import helvetia.User;
 import java.util.List;

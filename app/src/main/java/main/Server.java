@@ -1,13 +1,10 @@
 package helvetia.main;
 
-import org.apache.logging.log4j.Level;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import com.zaxxer.hikari.HikariConfig;
 import helvetia.User;
 import helvetia.UserList;
-import helvetia.dao.UserDao;
-import helvetia.dao.UserDaoImpl;
 
 import static spark.Spark.*;
 
@@ -22,7 +19,7 @@ public class Server {
 
 
     void addUserEndpoints() {
-        UserDao dao = new UserDaoImpl(db.get());
+        UserDao dao = new UserDaoImpl(db);
 
         post("/users", (req, res) -> {
             User input = User.parseFrom(req.bodyAsBytes());
@@ -69,18 +66,19 @@ public class Server {
     }
 
     public static void main(String[] args) {
-        // Read DB URL from environment, fallback to local default
+        // Read DB URL from environment, fallback to Vitess local default
+        // Connect to Vitess vtgate - empty database, will use fully qualified table names
         String dbUrl = System.getenv().getOrDefault(
                 "DB_URL",
-                "jdbc:mysql://localhost:3306/helvetia"
+                "jdbc:mysql://127.0.0.1:15306/"
         );
         String dbUser = System.getenv().getOrDefault(
                 "DB_USER",
-                "helvetia"
+                "root"
         );
         String dbPass = System.getenv().getOrDefault(
                 "DB_PASS",
-                "helvetia"
+                ""
         );
 
         // Read server bind address from environment, fallback to localhost
@@ -93,7 +91,7 @@ public class Server {
         cfg.setJdbcUrl(dbUrl);
         cfg.setUsername(dbUser);
         cfg.setPassword(dbPass);
-        DB db = new DB(cfg);
+        DB db = new DB(cfg, "user_keyspace");
 
         Server server = new Server(db);
         ipAddress(bindAddr);
