@@ -1310,6 +1310,61 @@ services:
     networks:
       - vitess_net
 
+  # ===========================================
+  # VTADMIN API - Vitess Admin Backend
+  # ===========================================
+  vtadmin-api:
+    platform: linux/amd64
+    command:
+      - sh
+      - -c
+      - |
+        /vt/bin/vtadmin \
+          --addr "0.0.0.0:14200" \
+          --http-origin "http://localhost:14201" \
+          --http-tablet-url-tmpl "http://{{ .Tablet.Hostname }}:15{{ .Tablet.Alias.Uid }}" \
+          --tracer "noop" \
+          --logtostderr \
+          --alsologtostderr \
+          --no-rbac \
+          --cluster "id=helvetia,name=helvetia,discovery=staticfile,discovery-staticfile-path=/script/vtadmin/discovery.json,tablet-fqdn-tmpl=http://{{ .Tablet.Hostname }}:15{{ .Tablet.Alias.Uid }}" \
+          > /dev/stdout 2>&1
+    depends_on:
+      - vtctld
+      - vtgate
+    image: vitess/lite:v23.0.0
+    ports:
+      - 14200:14200
+    volumes:
+      - .:/script
+    networks:
+      - vitess_net
+
+  # ===========================================
+  # VTADMIN WEB - Vitess Admin Frontend
+  # ===========================================
+  vtadmin-web:
+    platform: linux/amd64
+    image: node:22-alpine
+    working_dir: /app
+    command:
+      - sh
+      - -c
+      - |
+        npm install && \
+        VITE_VTADMIN_API_ADDRESS="http://localhost:14200" \
+        VITE_ENABLE_EXPERIMENTAL_TABLET_DEBUG_VARS="true" \
+        npx serve -l 14201 -s build
+    depends_on:
+      - vtadmin-api
+    ports:
+      - 14201:14201
+    volumes:
+      - ./web/vtadmin:/app
+      - ./web/vtadmin/build:/app/build
+    networks:
+      - vitess_net
+
 networks:
   vitess_net:
     driver: bridge
