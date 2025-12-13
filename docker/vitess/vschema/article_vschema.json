@@ -1,0 +1,46 @@
+{
+  "sharded": true,
+  "vindexes": {
+    "category_vdx": {
+      "type": "region_json",
+      "params": {
+        "region_map": "/script/config/category_map.json",
+        "region_bytes": "1"
+      }
+    },
+    "article_lookup": {
+      "type": "consistent_lookup_unique",
+      "params": {
+        "table": "article_keyspace.article_lookup",
+        "from": "aid",
+        "to": "keyspace_id"
+      },
+      "owner": "article"
+    },
+    "xxhash": {
+      "type": "xxhash"
+    }
+  },
+  "tables": {
+    "article": {
+      "column_vindexes": [
+        {
+          "name": "category_vdx",
+          "columns": ["id", "category"]
+        },
+        {
+          "name": "article_lookup",
+          "columns": ["aid"]
+        }
+      ]
+    },
+    "article_lookup": {
+      "column_vindexes": [
+        {
+          "column": "aid",
+          "name": "xxhash"
+        }
+      ]
+    }
+  }
+}

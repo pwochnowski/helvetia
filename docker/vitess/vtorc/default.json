@@ -1,0 +1,6 @@
+{
+  "RecoveryPeriodBlockSeconds": 5,
+  "SQLite3DataFile": "/vt/vtdataroot/vtorc/vtorc.db",
+  "InstancePollSeconds": 1,
+  "PreventCrossDataCenterPrimaryFailover": true
+}

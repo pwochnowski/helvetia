@@ -1,0 +1,46 @@
+{
+  "sharded": true,
+  "vindexes": {
+    "temporal_vdx": {
+      "type": "region_json",
+      "params": {
+        "region_map": "/script/config/temporal_map.json",
+        "region_bytes": "1"
+      }
+    },
+    "popularrank_lookup": {
+      "type": "consistent_lookup_unique",
+      "params": {
+        "table": "popularrank_keyspace.popularrank_lookup",
+        "from": "id",
+        "to": "keyspace_id"
+      },
+      "owner": "popular_rank"
+    },
+    "xxhash": {
+      "type": "xxhash"
+    }
+  },
+  "tables": {
+    "popular_rank": {
+      "column_vindexes": [
+        {
+          "name": "temporal_vdx",
+          "columns": ["id", "temporalGranularity"]
+        },
+        {
+          "name": "popularrank_lookup",
+          "columns": ["id"]
+        }
+      ]
+    },
+    "popularrank_lookup": {
+      "column_vindexes": [
+        {
+          "column": "id",
+          "name": "xxhash"
+        }
+      ]
+    }
+  }
+}

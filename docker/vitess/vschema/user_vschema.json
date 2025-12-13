@@ -1,0 +1,46 @@
+{
+  "sharded": true,
+  "vindexes": {
+    "region_vdx": {
+      "type": "region_json",
+      "params": {
+        "region_map": "/script/config/region_map.json",
+        "region_bytes": "1"
+      }
+    },
+    "user_lookup": {
+      "type": "consistent_lookup_unique",
+      "params": {
+        "table": "user_keyspace.user_lookup",
+        "from": "uid",
+        "to": "keyspace_id"
+      },
+      "owner": "user"
+    },
+    "xxhash": {
+      "type": "xxhash"
+    }
+  },
+  "tables": {
+    "user": {
+      "column_vindexes": [
+        {
+          "name": "region_vdx",
+          "columns": ["id", "region"]
+        },
+        {
+          "name": "user_lookup",
+          "columns": ["uid"]
+        }
+      ]
+    },
+    "user_lookup": {
+      "column_vindexes": [
+        {
+          "column": "uid",
+          "name": "xxhash"
+        }
+      ]
+    }
+  }
+}
