@@ -41,7 +41,7 @@ public class UserDaoTest {
     public void fullWorkflow() throws Exception {
         // insert
         User u1 = User.newBuilder()
-                .setId("1").setTimestamp(1).setUid("u1").setName("Alice")
+                .setId("1").setTimestamp(1).setUid("u1").setName("Alice").setRegion("beijing")
                 .build();
         dao.create(u1);
 //        Assert.assertEquals(u1.getName(), created1.getName());

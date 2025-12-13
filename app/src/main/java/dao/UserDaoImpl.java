@@ -27,7 +27,7 @@ public class UserDaoImpl implements UserDao {
 //                .setDept(rs.getString("dept"))
 //                .setGrade(rs.getString("grade"))
 //                .setLanguage(rs.getString("language"))
-//                .setRegion(rs.getString("region"))
+                .setRegion(rs.getString("region"))
 //                .setRole(rs.getString("role"))
 //                .setPreferTags(rs.getString("prefer_tags"))
 //                .setObtainedCredits(rs.getString("obtained_credits"))
@@ -37,8 +37,8 @@ public class UserDaoImpl implements UserDao {
     @Override
     public void create(User u) throws Exception {
         String sql = """
-            INSERT INTO users (id, ts, uid, name)
-            VALUES (?, ?, ?, ?)
+            INSERT INTO users (id, ts, uid, name, region)
+            VALUES (?, ?, ?, ?, ?)
         """;
 
         try (Connection conn = ds.getConnection();
@@ -50,7 +50,7 @@ public class UserDaoImpl implements UserDao {
 
     @Override
     public User get(long id) throws Exception {
-        String sql = "SELECT id, ts, uid, name FROM users WHERE id = ?";
+        String sql = "SELECT id, ts, uid, name, region FROM users WHERE id = ?";
 
         try (Connection conn = ds.getConnection();
              PreparedStatement st = conn.prepareStatement(sql)) {
@@ -90,7 +90,7 @@ public class UserDaoImpl implements UserDao {
 //        st.setString(8, u.getDept());
 //        st.setString(9, u.getGrade());
 //        st.setString(10, u.getLanguage());
-//        st.setString(11, u.getRegion());
+        st.setString(11, u.getRegion());
 //        st.setString(12, u.getRole());
 //        st.setString(13, u.getPreferTags());
 //        st.setString(14, u.getObtainedCredits());
@@ -110,7 +110,7 @@ public class UserDaoImpl implements UserDao {
 
     @Override
     public List<User> list() throws Exception {
-        String sql = "SELECT id, ts, uid, name FROM users ORDER BY id";
+        String sql = "SELECT id, ts, uid, name, region FROM users ORDER BY id";
 
         try (Connection conn = ds.getConnection();
              PreparedStatement st = conn.prepareStatement(sql)) {

@@ -38,19 +38,21 @@ public class UserInsertTest {
                     .setTimestamp(123456)
                     .setUid("1")
                     .setName("Alice")
+                    .setRegion("beijing")
                     .build();
 
             // insert
             PreparedStatement ps = conn.prepareStatement("""
                 INSERT INTO users (
-                  id, ts, uid, name
-                ) VALUES (?, ?, ?, ?)
+                  id, ts, uid, name, region
+                ) VALUES (?, ?, ?, ?, ?)
             """);
 
             ps.setString(1, user.getId());
             ps.setLong(2, user.getTimestamp());
             ps.setString(3, user.getUid());
             ps.setString(4, user.getName());
+            ps.setString(5, user.getRegion());
             ps.executeUpdate();
 
             // verify

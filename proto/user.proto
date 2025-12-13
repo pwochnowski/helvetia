@@ -17,7 +17,7 @@ message User {
 //  string dept = 8;
 //  string grade = 9;
 //  string language = 10;
-//  string region = 11;
+  string region = 11;
 //  string role = 12;
 //  string preferTags = 13;
 //  string obtainedCredits = 14;
