@@ -105,27 +105,27 @@ async function runSamples() {
 
   try {
     // Insert a Beijing user (automatically routes to shard -80)
-    //const beijingUser = {
-    //  id: 1,
-    //  uid: 'u001',
-    //  name: 'Zhang Wei',
-    //  region: 'Beijing',
-    //  email: 'zhang@example.com',
-    //};
-    //const createRes1 = await request('POST', '/users', encodeUser(beijingUser));
-    //log('POST', '/users', createRes1.status, '(Beijing user: Zhang Wei)');
-    //
-    //// Insert a HongKong user (automatically routes to shard 80-)
-    //const hongkongUser = {
-    //  id: 2,
-    //  uid: 'u002',
-    //  name: 'Chan Tai Man',
-    //  region: 'HongKong',
-    //  email: 'chan@example.com',
-    //};
-    //const createRes2 = await request('POST', '/users', encodeUser(hongkongUser));
-    //log('POST', '/users', createRes2.status, '(HongKong user: Chan Tai Man)');
-    //
+    const beijingUser = {
+     id: 1,
+     uid: 'u001',
+     name: 'Zhang Wei',
+     region: 'Beijing',
+     email: 'zhang@example.com',
+    };
+    const createRes1 = await request('POST', '/users', encodeUser(beijingUser));
+    log('POST', '/users', createRes1.status, '(Beijing user: Zhang Wei)');
+    
+    // Insert a HongKong user (automatically routes to shard 80-)
+    const hongkongUser = {
+     id: 2,
+     uid: 'u002',
+     name: 'Chan Tai Man',
+     region: 'HongKong',
+     email: 'chan@example.com',
+    };
+    const createRes2 = await request('POST', '/users', encodeUser(hongkongUser));
+    log('POST', '/users', createRes2.status, '(HongKong user: Chan Tai Man)');
+
     // List users
     const listRes = await request('GET', '/users');
     log('GET', '/users', listRes.status, `(${listRes.data.length} bytes)`);
@@ -134,6 +134,9 @@ async function runSamples() {
     const getRes = await request('GET', '/users/2');
     log('GET', '/users/2', getRes.status);
 
+    const delRes1 = await request('DELETE', '/users/1');
+    log('DELETE', '/users/1', delRes1.status);
+    //
     // Delete user
     const delRes = await request('DELETE', '/users/2');
     log('DELETE', '/users/2', delRes.status);
