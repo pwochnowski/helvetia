@@ -18,7 +18,7 @@ java_test(
     ],
     env = {
         "TESTCONTAINERS_RYUK_DISABLED": "true",
-        "DOCKER_HOST": "unix:///Users/paulw/.colima/default/docker.sock",
+        "DOCKER_HOST": "unix:///Users/thomasadler/.colima/default/docker.sock",
     },
     tags = ["no-sandbox"]   # Required for Testcontainers to work on macOS/Linux
 )
@@ -38,6 +38,6 @@ java_test(
     ],
      env = {
         "TESTCONTAINERS_RYUK_DISABLED": "true",
-        "DOCKER_HOST": "unix:///Users/paulw/.colima/default/docker.sock",
+        "DOCKER_HOST": "unix:///Users/thomasadler/.colima/default/docker.sock",
     },
 )
