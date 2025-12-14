@@ -1291,24 +1291,24 @@ services:
   # VREPLICATION SETUP
   # Sets up replication for Article and Be-Read (science category)
   # ===========================================
-  vreplication_setup:
-    platform: linux/amd64
-    command:
-      - sh
-      - -c
-      - /script/vreplication-setup.sh
-    depends_on:
-      - schemaload_article_keyspace
-      - schemaload_beread_keyspace
-    environment:
-      - TOPOLOGY_FLAGS=--topo-implementation consul --topo-global-server-address consul1:8500
-        --topo-global-root vitess/global
-      - GRPC_PORT=15999
-    image: vitess/lite:v23.0.0
-    volumes:
-      - .:/script
-    networks:
-      - vitess_net
+  # vreplication_setup:
+  #   platform: linux/amd64
+  #   command:
+  #     - sh
+  #     - -c
+  #     - /script/vreplication-setup.sh
+  #   depends_on:
+  #     - schemaload_article_keyspace
+  #     - schemaload_beread_keyspace
+  #   environment:
+  #     - TOPOLOGY_FLAGS=--topo-implementation consul --topo-global-server-address consul1:8500
+  #       --topo-global-root vitess/global
+  #     - GRPC_PORT=15999
+  #   image: vitess/lite:v23.0.0
+  #   volumes:
+  #     - .:/script
+  #   networks:
+  #     - vitess_net
 
   # ===========================================
   # VTADMIN API - Vitess Admin Backend
