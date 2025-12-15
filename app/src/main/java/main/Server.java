@@ -150,6 +150,8 @@ public class Server {
         ipAddress(bindAddr);
         port(8080);
 
+        get("/hello", (req, res) -> "Hello from SparkJava!");
+
         server.run();
     }
 }
