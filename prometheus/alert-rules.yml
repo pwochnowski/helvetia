@@ -2,8 +2,6 @@ groups:
   - name: helvetia_alerts
     interval: 30s
     rules:
-      # (Removed) TEMP test alert once email verified
-
       # Alert 1: High request load
       - alert: HighRequestLoad
         expr: sum(rate(http_requests_total[1m])) > 5
