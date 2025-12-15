@@ -1,7 +1,7 @@
 global:
   resolve_timeout: 5m
   smtp_smarthost: 'smtp.gmail.com:587'
-  smtp_from: 'alertmanager@helvetia.local'
+  smtp_from: 'thomas0299@gmail.com'
   smtp_auth_username: 'thomas0299@gmail.com'
   smtp_auth_password: 'XXXX'  # Replace with Gmail App Password
   smtp_require_tls: true

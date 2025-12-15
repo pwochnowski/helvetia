@@ -55,7 +55,7 @@ public class UserDaoImpl implements UserDao {
         // Vitess sharded tables require the sharding key (id, region) to be provided explicitly
         // AUTO_INCREMENT cannot be used for the primary vindex column in sharded keyspaces
         String sql = """
-            INSERT INTO user_keyspace.users (id, timestamp, uid, name, gender, email, phone, dept, grade, language, region, role, preferTags, obtainedCredits)
+            INSERT INTO user_keyspace.user (id, timestamp, uid, name, gender, email, phone, dept, grade, language, region, role, preferTags, obtainedCredits)
             VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
         """;
 
@@ -69,7 +69,7 @@ public class UserDaoImpl implements UserDao {
 
     @Override
     public User get(long id) throws Exception {
-        String sql = "SELECT id, timestamp, uid, name, gender, email, phone, dept, grade, language, region, role, preferTags, obtainedCredits FROM user_keyspace.users WHERE id = ?";
+        String sql = "SELECT id, timestamp, uid, name, gender, email, phone, dept, grade, language, region, role, preferTags, obtainedCredits FROM user_keyspace.user WHERE id = ?";
 
         try (Connection conn = db.getConnection();
              PreparedStatement st = conn.prepareStatement(sql)) {
@@ -85,7 +85,7 @@ public class UserDaoImpl implements UserDao {
     @Override
     public void update(User u) throws Exception {
         String sql = """
-            UPDATE user_keyspace.users
+            UPDATE user_keyspace.user
             SET name = ?
             WHERE id = ?
         """;
@@ -122,7 +122,7 @@ public class UserDaoImpl implements UserDao {
 
     @Override
     public boolean delete(long id) throws Exception {
-        String sql = "DELETE FROM user_keyspace.users WHERE id = ?";
+        String sql = "DELETE FROM user_keyspace.user WHERE id = ?";
 
         try (Connection conn = db.getConnection();
              PreparedStatement st = conn.prepareStatement(sql)) {
@@ -134,7 +134,7 @@ public class UserDaoImpl implements UserDao {
 
     @Override
     public List<User> list() throws Exception {
-        String sql = "SELECT id, timestamp, uid, name, gender, email, phone, dept, grade, language, region, role, preferTags, obtainedCredits FROM user_keyspace.users ORDER BY id";
+        String sql = "SELECT id, timestamp, uid, name, gender, email, phone, dept, grade, language, region, role, preferTags, obtainedCredits FROM user_keyspace.user ORDER BY id";
 
         try (Connection conn = db.getConnection();
              PreparedStatement st = conn.prepareStatement(sql)) {

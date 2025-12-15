@@ -2,7 +2,7 @@
 -- Fragmented by region: Beijing -> Cell1, HongKong -> Cell2
 CREATE TABLE IF NOT EXISTS `user` (
   `id` BIGINT NOT NULL AUTO_INCREMENT,
-  `timestamp` DATETIME DEFAULT CURRENT_TIMESTAMP,
+  `timestamp` BIGINT,
   `uid` VARCHAR(64) NOT NULL,
   `name` VARCHAR(128) NOT NULL,
   `gender` ENUM('male', 'female', 'other') DEFAULT 'other',

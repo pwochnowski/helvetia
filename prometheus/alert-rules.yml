@@ -2,15 +2,17 @@ groups:
   - name: helvetia_alerts
     interval: 30s
     rules:
+      # (Removed) TEMP test alert once email verified
+
       # Alert 1: High request load
       - alert: HighRequestLoad
-        expr: sum(rate(http_requests_total[1m])) > 10
-        for: 30s
+        expr: sum(rate(http_requests_total[1m])) > 5
+        for: 0s
         labels:
           severity: warning
         annotations:
           summary: "High request load detected"
-          description: "Request rate is {{ $value | humanize }} requests/second (threshold: 10 req/s)"
+          description: "Request rate is {{ $value | humanize }} requests/second (threshold: 5 req/s)"
 
       # Alert 2: High error rate
       - alert: HighErrorRate

@@ -9,8 +9,8 @@ read -s APP_PASSWORD
 # Remove spaces
 APP_PASSWORD=$(echo "$APP_PASSWORD" | tr -d ' ')
 
-# Update the alertmanager config
-sed -i.bak "s/YOUR_GMAIL_APP_PASSWORD/$APP_PASSWORD/g" prometheus/alertmanager.yml
+# Update the alertmanager config (replace the smtp_auth_password value robustly)
+sed -i.bak -E "s|^\s*smtp_auth_password:.*|  smtp_auth_password: '$APP_PASSWORD'  # Gmail App Password|" prometheus/alertmanager.yml
 
 echo "✅ Password updated in alertmanager.yml"
 echo "Restarting alertmanager..."

@@ -18,7 +18,6 @@ scrape_configs:
     static_configs:
       - targets: ['localhost:9090']
 
-  # Your Helvetia app (we'll add metrics endpoint next)
   - job_name: 'helvetia-app'
     static_configs:
       - targets: ['app:8080']

@@ -1,37 +1,152 @@
 services:
-  db:
-    image: helvetia/mysql:dev
-    container_name: helvetia-db
-    environment:
-      MYSQL_ROOT_PASSWORD: helvetia
-      MYSQL_DATABASE: helvetia
-      MYSQL_USER: helvetia
-      MYSQL_PASSWORD: helvetia
+  # ===========================================
+  # TOPOLOGY SERVICE (Consul)
+  # ===========================================
+  consul:
+    platform: linux/amd64
+    image: hashicorp/consul:latest
+    container_name: helvetia-consul
+    command: agent -server -bootstrap-expect 1 -ui -disable-host-node-id -client 0.0.0.0
+    hostname: consul1
     ports:
-      - "3306:3306"       # for local dev; optional
+      - "8500:8500"
     networks:
       - helvnet
-    volumes:
-      - mysqldata:/var/lib/mysql
-    healthcheck:
-      test: ["CMD", "mysqladmin", "ping", "-h", "localhost", "-u", "helvetia", "-phelvetia"]
-      interval: 5s
-      timeout: 3s
-      retries: 10
 
+  # ===========================================
+  # VTCTLD - Vitess Cluster Management
+  # ===========================================
+  vtctld:
+    platform: linux/amd64
+    image: vitess/lite:v23.0.0
+    container_name: helvetia-vtctld
+    command:
+      - sh
+      - -c
+      - '/vt/bin/vtctld --topo-implementation consul --topo-global-server-address consul:8500
+        --topo-global-root vitess/global --cell cell1
+        --service-map "grpc-vtctl,grpc-vtctld" --backup-storage-implementation file 
+        --file-backup-storage-root /vt/vtdataroot/backups --logtostderr=true --port 8080 --grpc-port 15999'
+    depends_on:
+      - consul
+    ports:
+      - "15000:8080"
+      - "15999:15999"
+    volumes:
+      - ./docker/vitess:/script
+    networks:
+      - helvnet
+
+  # ===========================================
+  # VTGATE - Query Router (MySQL-compatible proxy)
+  # ===========================================
+  vtgate:
+    platform: linux/amd64
+    image: vitess/lite:v23.0.0
+    container_name: helvetia-vtgate
+    command:
+      - sh
+      - -c
+      - '/script/run-forever.sh /vt/bin/vtgate --topo-implementation consul --topo-global-server-address
+        consul:8500 --topo-global-root vitess/global --logtostderr=true --port 8080 --grpc-port
+        15999 --mysql-server-port 15306 --mysql-auth-server-impl none --cell cell1 --cells-to-watch
+        cell1 --tablet-types-to-wait PRIMARY,REPLICA --service-map "grpc-vtgateservice"
+        --normalize-queries=true'
+    depends_on:
+      - vtctld
+    ports:
+      - "15099:8080"  # Vtgate web UI
+      - "15306:15306" # MySQL protocol port (app connects here)
+    volumes:
+      - ./docker/vitess:/script
+    networks:
+      - helvnet
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8080/healthz"]
+      interval: 10s
+      timeout: 5s
+      retries: 15
+
+  # ===========================================
+  # VTTABLET - User Keyspace Primary
+  # ===========================================
+  vttablet_user_primary:
+    platform: linux/amd64
+    image: vitess/lite:v23.0.0
+    container_name: helvetia-vttablet-user-primary
+    command:
+      - sh
+      - -c
+      - /script/vttablet-up.sh 101
+    depends_on:
+      - vtctld
+    environment:
+      - TOPOLOGY_FLAGS=--topo-implementation consul --topo-global-server-address consul:8500 --topo-global-root vitess/global
+      - WEB_PORT=8080
+      - GRPC_PORT=15999
+      - CELL=cell1
+      - KEYSPACE=user_keyspace
+      - SHARD=-
+      - ROLE=primary
+      - VTHOST=vttablet_user_primary
+      - EXTERNAL_DB=0
+      - SLEEPTIME=30
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8080/debug/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 15
+    ports:
+      - "15101:8080"
+    volumes:
+      - ./docker/vitess:/script
+    networks:
+      - helvnet
+
+  # ===========================================
+  # SCHEMA LOADER - Initializes database schema
+  # ===========================================
+  schemaload:
+    platform: linux/amd64
+    image: vitess/lite:v23.0.0
+    container_name: helvetia-schemaload
+    command:
+      - sh
+      - -c
+      - /script/schemaload.sh
+    depends_on:
+      vttablet_user_primary:
+        condition: service_healthy
+    environment:
+      - GRPC_PORT=15999
+      - KEYSPACE=user_keyspace
+      - CELL=cell1
+      - TARGETTAB=cell1-0000000101
+      - SCHEMA_FILES=create_user.sql
+      - EXTERNAL_DB=0
+      - VSCHEMA_FILE=vschema/user_vschema.json
+      - SLEEPTIME=10
+    volumes:
+      - ./docker/vitess:/script
+    networks:
+      - helvnet
+
+  # ===========================================
+  # JAVA APPLICATION
+  # ===========================================
   app:
     image: helvetia/server:latest
     container_name: helvetia-app
     ports:
-      - "8080:8080"       # for local dev; optional
+      - "8080:8080"
     depends_on:
-      db:
+      vtgate:
         condition: service_healthy
     environment:
       BIND_ADDR: "0.0.0.0"
-      DB_URL: "jdbc:mysql://db:3306/helvetia"
-      DB_USER: "helvetia"
-      DB_PASS: "helvetia"
+      DB_URL: "jdbc:mysql://vtgate:15306/"
+      DB_USER: "root"
+      DB_PASS: ""
     networks:
       - helvnet
 
@@ -79,7 +194,6 @@ services:
       - helvnet
 
 volumes:
-  mysqldata:
   prometheus-data:
   grafana-data:
 

@@ -3,7 +3,6 @@
 set -ex
 
 cd "$(dirname "$0")"
-docker build -t helvetia/mysql:dev postgres
 
 bazel build //app:server_deploy.jar
 cp $(bazel info bazel-bin)/app/server_deploy.jar  app/server_deploy.jar
