@@ -1,0 +1,25 @@
+global:
+  scrape_interval: 15s     # How often to scrape targets
+  evaluation_interval: 15s # How often to evaluate rules
+
+# Alertmanager configuration
+alerting:
+  alertmanagers:
+    - static_configs:
+        - targets: ['alertmanager:9093']
+
+# Load alert rules
+rule_files:
+  - '/etc/prometheus/alert-rules.yml'
+
+scrape_configs:
+  # Prometheus itself
+  - job_name: 'prometheus'
+    static_configs:
+      - targets: ['localhost:9090']
+
+  # Your Helvetia app (we'll add metrics endpoint next)
+  - job_name: 'helvetia-app'
+    static_configs:
+      - targets: ['app:8080']
+    metrics_path: '/metrics'

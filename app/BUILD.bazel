@@ -25,5 +25,9 @@ java_binary(
         "@maven//:org_apache_logging_log4j_log4j_slf4j2_impl",
         "@maven//:com_mysql_mysql_connector_j",
         "@maven//:com_google_code_gson_gson",
+        "@maven//:io_prometheus_simpleclient",
+        "@maven//:io_prometheus_simpleclient_hotspot",
+        "@maven//:io_prometheus_simpleclient_servlet",
+        "@maven//:io_prometheus_simpleclient_common",
     ],
 )

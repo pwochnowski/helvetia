@@ -24,8 +24,7 @@ public class UserDaoImpl implements UserDao {
             tagList = gson.fromJson(jsonTags, new TypeToken<List<String>>(){}.getType());
         }
 
-        Timestamp ts = rs.getTimestamp("timestamp");
-        long timestampMillis = ts != null ? ts.getTime() : 0;
+        long timestampMillis = rs.getLong("timestamp");
 
         User.Builder builder = User.newBuilder()
                 .setId(rs.getLong("id"))
@@ -56,7 +55,7 @@ public class UserDaoImpl implements UserDao {
         // Vitess sharded tables require the sharding key (id, region) to be provided explicitly
         // AUTO_INCREMENT cannot be used for the primary vindex column in sharded keyspaces
         String sql = """
-            INSERT INTO user_keyspace.user (id, timestamp, uid, name, gender, email, phone, dept, grade, language, region, role, preferTags, obtainedCredits)
+            INSERT INTO user_keyspace.users (id, timestamp, uid, name, gender, email, phone, dept, grade, language, region, role, preferTags, obtainedCredits)
             VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
         """;
 
@@ -70,7 +69,7 @@ public class UserDaoImpl implements UserDao {
 
     @Override
     public User get(long id) throws Exception {
-        String sql = "SELECT id, timestamp, uid, name, gender, email, phone, dept, grade, language, region, role, preferTags, obtainedCredits FROM user_keyspace.user WHERE id = ?";
+        String sql = "SELECT id, timestamp, uid, name, gender, email, phone, dept, grade, language, region, role, preferTags, obtainedCredits FROM user_keyspace.users WHERE id = ?";
 
         try (Connection conn = db.getConnection();
              PreparedStatement st = conn.prepareStatement(sql)) {
@@ -86,7 +85,7 @@ public class UserDaoImpl implements UserDao {
     @Override
     public void update(User u) throws Exception {
         String sql = """
-            UPDATE user_keyspace.user
+            UPDATE user_keyspace.users
             SET name = ?
             WHERE id = ?
         """;
@@ -101,7 +100,7 @@ public class UserDaoImpl implements UserDao {
 
     private void fillStatement(User u, PreparedStatement st, int startIdx) throws SQLException {
         int i = startIdx;
-        st.setTimestamp(i++, new Timestamp(u.getTimestamp()));
+        st.setLong(i++, u.getTimestamp());
         st.setString(i++, u.getUid());
         st.setString(i++, u.getName());
         st.setString(i++, emptyToNull(u.getGender()));  // ENUM field - empty string not allowed
@@ -123,7 +122,7 @@ public class UserDaoImpl implements UserDao {
 
     @Override
     public boolean delete(long id) throws Exception {
-        String sql = "DELETE FROM user_keyspace.user WHERE id = ?";
+        String sql = "DELETE FROM user_keyspace.users WHERE id = ?";
 
         try (Connection conn = db.getConnection();
              PreparedStatement st = conn.prepareStatement(sql)) {
@@ -135,7 +134,7 @@ public class UserDaoImpl implements UserDao {
 
     @Override
     public List<User> list() throws Exception {
-        String sql = "SELECT id, timestamp, uid, name, gender, email, phone, dept, grade, language, region, role, preferTags, obtainedCredits FROM user_keyspace.user ORDER BY id";
+        String sql = "SELECT id, timestamp, uid, name, gender, email, phone, dept, grade, language, region, role, preferTags, obtainedCredits FROM user_keyspace.users ORDER BY id";
 
         try (Connection conn = db.getConnection();
              PreparedStatement st = conn.prepareStatement(sql)) {
