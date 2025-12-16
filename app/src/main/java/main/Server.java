@@ -11,6 +11,8 @@ import helvetia.Read;
 import helvetia.ReadList;
 import helvetia.BeRead;
 import helvetia.BeReadList;
+import helvetia.PopularRank;
+import helvetia.PopularRankList;
 
 import static spark.Spark.*;
 
@@ -290,11 +292,78 @@ public class Server {
         });
     }
 
+    void addPopularRankEndpoints() {
+        PopularRankDao dao = new PopularRankDaoImpl(db);
+
+        post("/popularranks", (req, res) -> {
+            PopularRank input = PopularRank.parseFrom(req.bodyAsBytes());
+            dao.create(input);
+
+            return "";
+        });
+
+        get("/popularranks/:id", (req, res) -> {
+            long id = Long.parseLong(req.params(":id"));
+            PopularRank p = dao.get(id);
+            if (p == null) halt(404);
+
+            res.type("application/x-protobuf");
+            return p.toByteArray();
+        });
+
+        put("/popularranks/:id", (req, res) -> {
+            PopularRank input = PopularRank.parseFrom(req.bodyAsBytes());
+            dao.update(input);
+            return "";
+        });
+
+        delete("/popularranks/:id", (req, res) -> {
+            long id = Long.parseLong(req.params(":id"));
+            boolean ok = dao.delete(id);
+
+            res.status(ok ? 200 : 404);
+            return "";
+        });
+
+        get("/popularranks", (req, res) -> {
+            String filter = req.queryParams("filter");
+            
+            // Pagination parameters
+            int limit = 100;
+            String limitParam = req.queryParams("limit");
+            if (limitParam != null) {
+                limit = Math.min(Integer.parseInt(limitParam), 10000);
+            }
+            
+            int offset = 0;
+            String offsetParam = req.queryParams("offset");
+            if (offsetParam != null) {
+                offset = Integer.parseInt(offsetParam);
+            }
+            
+            // Sorting parameters
+            String sortBy = req.queryParams("sortBy");
+            String sortDir = req.queryParams("sortDir");
+            
+            // Get total count and list
+            final long totalCount = dao.count(filter);
+            final var list = dao.list(filter, limit, offset, sortBy, sortDir);
+
+            final var out = PopularRankList.newBuilder()
+                .addAllPopularRanks(list)
+                .setTotalCount(totalCount)
+                .build();
+            res.type("application/x-protobuf");
+            return out.toByteArray();
+        });
+    }
+
     public void run() {
         addUserEndpoints();
         addArticleEndpoints();
         addReadEndpoints();
         addBeReadEndpoints();
+        addPopularRankEndpoints();
     }
 
     public static void main(String[] args) {

@@ -12,3 +12,8 @@ message PopularRank {
   repeated string articleAidList = 4;
   string rankDate = 5;
 }
+
+message PopularRankList {
+  repeated PopularRank popularRanks = 1;
+  int64 totalCount = 2;
+}

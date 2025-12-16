@@ -7,6 +7,7 @@ import { tableConfig as userConfig, decodeUser, encodeUser } from './tables/user
 import { tableConfig as articleConfig, decodeArticle, encodeArticle } from './tables/article.js';
 import { tableConfig as readConfig, decodeRead, encodeRead } from './tables/read.js';
 import { tableConfig as bereadConfig, decodeBeRead, encodeBeRead } from './tables/beread.js';
+import { tableConfig as popularrankConfig, decodePopularRank, encodePopularRank } from './tables/popularrank.js';
 
 // Server configuration for multi-region setup
 // In development: Vite proxies /api/cell1/* and /api/cell2/* to respective servers
@@ -450,6 +451,82 @@ export async function deleteBeRead(id) {
     }
 }
 
+// ==================== PopularRank API ====================
+
+/**
+ * Fetch popular ranks with pagination and sorting
+ * @returns {{ items: array, totalCount: number }}
+ */
+export async function fetchPopularRanks(rsqlFilter = null, limit = 100, offset = 0, sortBy = null, sortDir = null) {
+    const params = new URLSearchParams();
+    if (rsqlFilter) params.set('filter', rsqlFilter);
+    params.set('limit', limit.toString());
+    params.set('offset', offset.toString());
+    if (sortBy) params.set('sortBy', sortBy);
+    if (sortDir) params.set('sortDir', sortDir);
+    
+    let url = `${getApiBase()}/popularranks`;
+    const queryString = params.toString();
+    if (queryString) url += `?${queryString}`;
+    
+    const response = await fetch(url, {
+        headers: {
+            'Accept': 'application/x-protobuf',
+        },
+    });
+    
+    if (!response.ok) {
+        throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+    }
+    
+    const buffer = await response.arrayBuffer();
+    const uint8 = new Uint8Array(buffer);
+    
+    return decodeListWithCount(uint8, decodePopularRank);
+}
+
+export async function updatePopularRank(popularRank) {
+    const body = encodePopularRank(popularRank, encodeVarintField, encodeString);
+    
+    const response = await fetch(`${getApiBase()}/popularranks/${popularRank.id}`, {
+        method: 'PUT',
+        headers: {
+            'Content-Type': 'application/x-protobuf',
+        },
+        body,
+    });
+    
+    if (!response.ok) {
+        throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+    }
+}
+
+export async function createPopularRank(popularRank) {
+    const body = encodePopularRank(popularRank, encodeVarintField, encodeString);
+    
+    const response = await fetch(`${getApiBase()}/popularranks`, {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/x-protobuf',
+        },
+        body,
+    });
+    
+    if (!response.ok) {
+        throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+    }
+}
+
+export async function deletePopularRank(id) {
+    const response = await fetch(`${getApiBase()}/popularranks/${id}`, {
+        method: 'DELETE',
+    });
+    
+    if (!response.ok) {
+        throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+    }
+}
+
 // ==================== Generic API Functions ====================
 
 // Map of table configs for easy lookup
@@ -458,6 +535,7 @@ export const tableConfigs = {
     articles: articleConfig,
     reads: readConfig,
     bereads: bereadConfig,
+    popularranks: popularrankConfig,
 };
 
 /**
@@ -470,6 +548,7 @@ export async function fetchData(tableName, rsqlFilter = null, limit = 100, offse
         case 'articles': return fetchArticles(rsqlFilter, limit, offset, sortBy, sortDir);
         case 'reads': return fetchReads(rsqlFilter, limit, offset, sortBy, sortDir);
         case 'bereads': return fetchBeReads(rsqlFilter, limit, offset, sortBy, sortDir);
+        case 'popularranks': return fetchPopularRanks(rsqlFilter, limit, offset, sortBy, sortDir);
         default: throw new Error(`Unknown table: ${tableName}`);
     }
 }
@@ -481,6 +560,7 @@ export async function updateData(tableName, data) {
         case 'articles': return updateArticle(data);
         case 'reads': return updateRead(data);
         case 'bereads': return updateBeRead(data);
+        case 'popularranks': return updatePopularRank(data);
         default: throw new Error(`Unknown table: ${tableName}`);
     }
 }
