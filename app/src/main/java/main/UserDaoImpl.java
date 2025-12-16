@@ -7,11 +7,18 @@ import com.google.gson.reflect.TypeToken;
 import java.sql.*;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Set;
 
 public class UserDaoImpl implements UserDao {
 
     private final DB db;
     private final Gson gson = new Gson();
+    
+    // RSQL to SQL converter with allowed columns
+    private final RsqlToSql rsqlConverter = new RsqlToSql(Set.of(
+        "id", "timestamp", "uid", "name", "gender", "email", "phone",
+        "dept", "grade", "language", "region", "role", "obtainedCredits"
+    ));
 
     public UserDaoImpl(DB db) {
         this.db = db;
@@ -135,10 +142,37 @@ public class UserDaoImpl implements UserDao {
 
     @Override
     public List<User> list() throws Exception {
-        String sql = "SELECT id, timestamp, uid, name, gender, email, phone, dept, grade, language, region, role, preferTags, obtainedCredits FROM user_keyspace.user ORDER BY id";
+        return list(null);
+    }
+    
+    @Override
+    public List<User> list(String rsqlFilter) throws Exception {
+        // Base query
+        String baseSql = "SELECT id, timestamp, uid, name, gender, email, phone, dept, grade, language, region, role, preferTags, obtainedCredits FROM user_keyspace.user";
+        
+        // Convert RSQL to SQL WHERE clause
+        RsqlToSql.SqlResult filterResult = rsqlConverter.convert(rsqlFilter);
+        
+        // Build final query
+        String sql = baseSql + " WHERE " + filterResult.whereClause + " ORDER BY id LIMIT 10000";
 
         try (Connection conn = db.getConnection();
              PreparedStatement st = conn.prepareStatement(sql)) {
+
+            // Set parameters from RSQL conversion
+            int paramIndex = 1;
+            for (Object param : filterResult.parameters) {
+                if (param instanceof Long) {
+                    st.setLong(paramIndex, (Long) param);
+                } else if (param instanceof Double) {
+                    st.setDouble(paramIndex, (Double) param);
+                } else if (param instanceof Integer) {
+                    st.setInt(paramIndex, (Integer) param);
+                } else {
+                    st.setString(paramIndex, param.toString());
+                }
+                paramIndex++;
+            }
 
             ResultSet rs = st.executeQuery();
             List<User> out = new ArrayList<>();

@@ -53,7 +53,10 @@ public class Server {
         });
 
         get("/users", (req, res) -> {
-            final var list = dao.list();  // List<User>
+            // Get optional RSQL filter from query parameter
+            String filter = req.queryParams("filter");
+            
+            final var list = dao.list(filter);  // List<User>
 
             final var out = UserList.newBuilder().addAllUsers(list).build();
             res.type("application/x-protobuf");

@@ -2,6 +2,7 @@ import { createGrid, ModuleRegistry, AllCommunityModule } from 'ag-grid-communit
 import 'ag-grid-community/styles/ag-grid.css';
 import 'ag-grid-community/styles/ag-theme-alpine.css';
 import { fetchUsers, updateUser, API_BASE } from './api.js';
+import { filterModelToRsql, parseRsqlForDisplay } from './rsql.js';
 
 // Register AG Grid modules
 ModuleRegistry.registerModules([AllCommunityModule]);
@@ -177,20 +178,47 @@ function updateRowCount() {
     document.getElementById('row-count').textContent = `Showing ${count.toLocaleString()} users`;
 }
 
-// Load users from API
+// Debounce helper for filter changes
+let filterDebounceTimer = null;
+function debounce(fn, delay) {
+    return (...args) => {
+        clearTimeout(filterDebounceTimer);
+        filterDebounceTimer = setTimeout(() => fn(...args), delay);
+    };
+}
+
+// Load users from API with current filters
 async function loadUsers() {
     showStatus('Loading users...', 'loading');
     
     try {
-        const users = await fetchUsers();
+        // Get current filter model and convert to RSQL
+        const filterModel = gridApi?.getFilterModel() || {};
+        const rsqlFilter = filterModelToRsql(filterModel);
+        
+        // Debug: show the RSQL in console
+        if (rsqlFilter) {
+            console.log('RSQL Filter:', rsqlFilter);
+            console.log('Human readable:', parseRsqlForDisplay(rsqlFilter));
+        }
+        
+        const users = await fetchUsers(rsqlFilter);
         gridApi.setGridOption('rowData', users);
         updateRowCount();
-        showStatus(`Loaded ${users.length.toLocaleString()} users`, 'success');
+        
+        const filterMsg = rsqlFilter ? ` (filtered)` : '';
+        showStatus(`Loaded ${users.length.toLocaleString()} users${filterMsg}`, 'success');
     } catch (error) {
         console.error('Failed to load users:', error);
         showStatus(`Error: ${error.message}`, 'error');
     }
 }
+
+// Handle filter changes - reload data from server with new filters
+const onFilterChanged = debounce(() => {
+    console.log('Filter changed, reloading from server...');
+    loadUsers();
+}, 300);  // 300ms debounce to avoid too many requests while typing
 
 // Handle cell value changes
 async function onCellValueChanged(event) {
@@ -230,6 +258,7 @@ const gridOptions = {
         resizable: true,
         sortable: true,
         filter: true,
+        floatingFilter: true,  // Show filter inputs below headers
     },
     rowData: [],
     
@@ -242,7 +271,7 @@ const gridOptions = {
     
     // Events
     onCellValueChanged,
-    onFilterChanged: updateRowCount,
+    onFilterChanged,  // Reload from server when filters change
     onSortChanged: updateRowCount,
     onGridReady: (params) => {
         gridApi = params.api;

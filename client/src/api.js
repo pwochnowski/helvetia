@@ -186,9 +186,15 @@ function encodeUser(user) {
 
 /**
  * Fetch all users from the API
+ * @param {string|null} rsqlFilter - Optional RSQL filter query
  */
-export async function fetchUsers() {
-    const response = await fetch(`${API_BASE}/users`, {
+export async function fetchUsers(rsqlFilter = null) {
+    let url = `${API_BASE}/users`;
+    if (rsqlFilter) {
+        url += `?filter=${encodeURIComponent(rsqlFilter)}`;
+    }
+    
+    const response = await fetch(url, {
         headers: {
             'Accept': 'application/x-protobuf',
         },

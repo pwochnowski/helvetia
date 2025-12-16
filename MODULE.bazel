@@ -30,6 +30,9 @@ maven.install(
         "com.zaxxer:HikariCP:5.1.0",
         
         "com.google.code.gson:gson:2.10.1",
+        
+        # RSQL parser for query filtering
+        "cz.jirutka.rsql:rsql-parser:2.1.0",
     ],
 )
 use_repo(maven, "maven")
