@@ -19,3 +19,7 @@ message Article {
   bytes image = 11;
   bytes video = 12;
 }
+
+message ArticleList {
+  repeated Article articles = 1;
+}

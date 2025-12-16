@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Helvetia - User Management</title>
+    <title>Helvetia - Data Management</title>
     <style>
         * {
             box-sizing: border-box;
@@ -21,6 +21,33 @@
         h1 {
             margin: 0 0 20px 0;
             color: #333;
+        }
+        .tabs {
+            display: flex;
+            gap: 5px;
+            margin-bottom: 15px;
+            border-bottom: 2px solid #e0e0e0;
+            padding-bottom: 0;
+        }
+        .tab-btn {
+            padding: 10px 20px;
+            border: none;
+            border-radius: 4px 4px 0 0;
+            cursor: pointer;
+            font-size: 14px;
+            background: #e0e0e0;
+            color: #666;
+            transition: all 0.2s;
+            margin-bottom: -2px;
+            border-bottom: 2px solid transparent;
+        }
+        .tab-btn:hover {
+            background: #d0d0d0;
+        }
+        .tab-btn.active {
+            background: #4a90d9;
+            color: white;
+            border-bottom: 2px solid #4a90d9;
         }
         .toolbar {
             display: flex;
@@ -91,10 +118,16 @@
 </head>
 <body>
     <div class="container">
-        <h1>📊 Helvetia User Management</h1>
+        <h1 id="page-title">📊 Helvetia User Management</h1>
+        
+        <div class="tabs">
+            <button class="tab-btn active" data-table="users">👤 Users</button>
+            <button class="tab-btn" data-table="articles">📄 Articles</button>
+            <button class="tab-btn" data-table="reads">📖 Reads</button>
+        </div>
         
         <div class="toolbar">
-            <button class="btn-primary" onclick="loadUsers()">🔄 Refresh</button>
+            <button class="btn-primary" onclick="loadData()">🔄 Refresh</button>
             <button class="btn-secondary" onclick="exportData()">📥 Export CSV</button>
             <div id="status" class="status" style="display: none;"></div>
         </div>

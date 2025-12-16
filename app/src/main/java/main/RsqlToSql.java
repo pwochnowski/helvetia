@@ -190,6 +190,6 @@ public class RsqlToSql {
      */
     private boolean isNumericField(String field) {
         // Add your numeric fields here
-        return Set.of("id", "timestamp", "obtainedCredits").contains(field);
+        return Set.of("id", "timestamp", "obtainedCredits", "readTimeLength").contains(field);
     }
 }

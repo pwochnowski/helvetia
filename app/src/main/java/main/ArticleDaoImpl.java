@@ -1,0 +1,197 @@
+package helvetia.main;
+
+import helvetia.Article;
+import com.google.gson.Gson;
+import com.google.gson.reflect.TypeToken;
+
+import java.sql.*;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.Set;
+
+public class ArticleDaoImpl implements ArticleDao {
+
+    private final DB db;
+    private final Gson gson = new Gson();
+    
+    // RSQL to SQL converter with allowed columns
+    private final RsqlToSql rsqlConverter = new RsqlToSql(Set.of(
+        "id", "timestamp", "aid", "title", "category", "abstract", "language"
+    ));
+
+    public ArticleDaoImpl(DB db) {
+        this.db = db;
+    }
+
+    Article fromResultSet(ResultSet rs) throws SQLException {
+        String jsonTags = rs.getString("articleTags");
+        List<String> tagList = new ArrayList<>();
+        if (jsonTags != null && !jsonTags.isEmpty()) {
+            tagList = gson.fromJson(jsonTags, new TypeToken<List<String>>(){}.getType());
+        }
+        
+        String jsonAuthors = rs.getString("authors");
+        List<String> authorList = new ArrayList<>();
+        if (jsonAuthors != null && !jsonAuthors.isEmpty()) {
+            authorList = gson.fromJson(jsonAuthors, new TypeToken<List<String>>(){}.getType());
+        }
+
+        Timestamp ts = rs.getTimestamp("timestamp");
+        long timestampMillis = ts != null ? ts.getTime() : 0;
+
+        Article.Builder builder = Article.newBuilder()
+                .setId(rs.getLong("id"))
+                .setTimestamp(timestampMillis)
+                .setAid(nullToEmpty(rs.getString("aid")))
+                .setTitle(nullToEmpty(rs.getString("title")))
+                .setCategory(nullToEmpty(rs.getString("category")))
+                .setAbstract(nullToEmpty(rs.getString("abstract")))
+                .addAllArticleTags(tagList)
+                .addAllAuthors(authorList)
+                .setLanguage(nullToEmpty(rs.getString("language")))
+                .setText(nullToEmpty(rs.getString("text")));
+        
+        // Handle binary fields - only if they exist and are not null
+        byte[] image = rs.getBytes("image");
+        if (image != null) {
+//            builder.setImage(com.google.protobuf.ByteString.copyFrom(image));
+        }
+        byte[] video = rs.getBytes("video");
+        if (video != null) {
+//            builder.setVideo(com.google.protobuf.ByteString.copyFrom(video));
+        }
+
+        return builder.build();
+    }
+
+    /** Convert null to empty string for protobuf string fields */
+    private String nullToEmpty(String s) {
+        return s == null ? "" : s;
+    }
+
+    @Override
+    public void create(Article a) throws Exception {
+        String sql = """
+            INSERT INTO article_keyspace.article (id, timestamp, aid, title, category, abstract, articleTags, authors, language, text, image, video)
+            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+        """;
+
+        try (Connection conn = db.getConnection();
+            PreparedStatement st = conn.prepareStatement(sql)) {
+            st.setLong(1, a.getId());
+            fillStatement(a, st, 2);
+            st.executeUpdate();
+        }
+    }
+
+    @Override
+    public Article get(long id) throws Exception {
+        String sql = "SELECT id, timestamp, aid, title, category, abstract, articleTags, authors, language, text, image, video FROM article_keyspace.article WHERE id = ?";
+
+        try (Connection conn = db.getConnection();
+             PreparedStatement st = conn.prepareStatement(sql)) {
+
+            st.setLong(1, id);
+            ResultSet rs = st.executeQuery();
+            if (!rs.next()) return null;
+
+            return fromResultSet(rs);
+        }
+    }
+
+    @Override
+    public void update(Article a) throws Exception {
+        String sql = """
+            UPDATE article_keyspace.article
+            SET title = ?, category = ?, abstract = ?, language = ?
+            WHERE id = ?
+        """;
+
+        try (Connection conn = db.getConnection();
+             PreparedStatement st = conn.prepareStatement(sql)) {
+            st.setString(1, a.getTitle());
+            st.setString(2, a.getCategory());
+            st.setString(3, a.getAbstract());
+            st.setString(4, a.getLanguage());
+            st.setLong(5, a.getId());
+            st.executeUpdate();
+        }
+    }
+
+    private void fillStatement(Article a, PreparedStatement st, int startIdx) throws SQLException {
+        int i = startIdx;
+        st.setTimestamp(i++, new Timestamp(a.getTimestamp()));
+        st.setString(i++, a.getAid());
+        st.setString(i++, a.getTitle());
+        st.setString(i++, emptyToNull(a.getCategory()));
+        st.setString(i++, emptyToNull(a.getAbstract()));
+        st.setString(i++, gson.toJson(a.getArticleTagsList()));
+        st.setString(i++, gson.toJson(a.getAuthorsList()));
+        st.setString(i++, emptyToNull(a.getLanguage()));
+        st.setString(i++, emptyToNull(a.getText()));
+        st.setBytes(i++, a.getImage().isEmpty() ? null : a.getImage().toByteArray());
+        st.setBytes(i++, a.getVideo().isEmpty() ? null : a.getVideo().toByteArray());
+    }
+
+    /** Convert empty strings to null for nullable DB columns */
+    private String emptyToNull(String s) {
+        return (s == null || s.isEmpty()) ? null : s;
+    }
+
+    @Override
+    public boolean delete(long id) throws Exception {
+        String sql = "DELETE FROM article_keyspace.article WHERE id = ?";
+
+        try (Connection conn = db.getConnection();
+             PreparedStatement st = conn.prepareStatement(sql)) {
+
+            st.setLong(1, id);
+            return st.executeUpdate() > 0;
+        }
+    }
+
+    @Override
+    public List<Article> list() throws Exception {
+        return list(null);
+    }
+    
+    @Override
+    public List<Article> list(String rsqlFilter) throws Exception {
+        // Base query - exclude large binary fields for list view
+        String baseSql = "SELECT id, timestamp, aid, title, category, abstract, articleTags, authors, language, text, image, video FROM article_keyspace.article";
+        
+        // Convert RSQL to SQL WHERE clause
+        RsqlToSql.SqlResult filterResult = rsqlConverter.convert(rsqlFilter);
+        
+        // Build final query
+        String sql = baseSql + " WHERE " + filterResult.whereClause + " ORDER BY id LIMIT 10000";
+
+        try (Connection conn = db.getConnection();
+             PreparedStatement st = conn.prepareStatement(sql)) {
+
+            // Set parameters from RSQL conversion
+            int paramIndex = 1;
+            for (Object param : filterResult.parameters) {
+                if (param instanceof Long) {
+                    st.setLong(paramIndex, (Long) param);
+                } else if (param instanceof Double) {
+                    st.setDouble(paramIndex, (Double) param);
+                } else if (param instanceof Integer) {
+                    st.setInt(paramIndex, (Integer) param);
+                } else {
+                    st.setString(paramIndex, param.toString());
+                }
+                paramIndex++;
+            }
+
+            ResultSet rs = st.executeQuery();
+            List<Article> out = new ArrayList<>();
+
+            while (rs.next()) {
+                out.add(fromResultSet(rs));
+            }
+
+            return out;
+        }
+    }
+}

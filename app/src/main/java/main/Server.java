@@ -5,6 +5,10 @@ import org.apache.logging.log4j.Logger;
 import com.zaxxer.hikari.HikariConfig;
 import helvetia.User;
 import helvetia.UserList;
+import helvetia.Article;
+import helvetia.ArticleList;
+import helvetia.Read;
+import helvetia.ReadList;
 
 import static spark.Spark.*;
 
@@ -64,8 +68,98 @@ public class Server {
         });
     }
 
+    void addArticleEndpoints() {
+        ArticleDao dao = new ArticleDaoImpl(db);
+
+        post("/articles", (req, res) -> {
+            Article input = Article.parseFrom(req.bodyAsBytes());
+            dao.create(input);
+
+            return "";
+        });
+
+        get("/articles/:id", (req, res) -> {
+            long id = Long.parseLong(req.params(":id"));
+            Article a = dao.get(id);
+            if (a == null) halt(404);
+
+            res.type("application/x-protobuf");
+            return a.toByteArray();
+        });
+
+        put("/articles/:id", (req, res) -> {
+            Article input = Article.parseFrom(req.bodyAsBytes());
+            dao.update(input);
+            return "";
+        });
+
+        delete("/articles/:id", (req, res) -> {
+            long id = Long.parseLong(req.params(":id"));
+            boolean ok = dao.delete(id);
+
+            res.status(ok ? 200 : 404);
+            return "";
+        });
+
+        get("/articles", (req, res) -> {
+            String filter = req.queryParams("filter");
+            
+            final var list = dao.list(filter);
+
+            final var out = ArticleList.newBuilder().addAllArticles(list).build();
+            res.type("application/x-protobuf");
+            return out.toByteArray();
+        });
+    }
+
+    void addReadEndpoints() {
+        ReadDao dao = new ReadDaoImpl(db);
+
+        post("/reads", (req, res) -> {
+            Read input = Read.parseFrom(req.bodyAsBytes());
+            dao.create(input);
+
+            return "";
+        });
+
+        get("/reads/:id", (req, res) -> {
+            long id = Long.parseLong(req.params(":id"));
+            Read r = dao.get(id);
+            if (r == null) halt(404);
+
+            res.type("application/x-protobuf");
+            return r.toByteArray();
+        });
+
+        put("/reads/:id", (req, res) -> {
+            Read input = Read.parseFrom(req.bodyAsBytes());
+            dao.update(input);
+            return "";
+        });
+
+        delete("/reads/:id", (req, res) -> {
+            long id = Long.parseLong(req.params(":id"));
+            boolean ok = dao.delete(id);
+
+            res.status(ok ? 200 : 404);
+            return "";
+        });
+
+        get("/reads", (req, res) -> {
+            String filter = req.queryParams("filter");
+            
+            final var list = dao.list(filter);
+
+            final var out = ReadList.newBuilder().addAllReads(list).build();
+            res.type("application/x-protobuf");
+            return out.toByteArray();
+        });
+    }
+
     public void run() {
         addUserEndpoints();
+        addArticleEndpoints();
+        addReadEndpoints();
     }
 
     public static void main(String[] args) {

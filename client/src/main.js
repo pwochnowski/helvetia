@@ -1,162 +1,20 @@
 import { createGrid, ModuleRegistry, AllCommunityModule } from 'ag-grid-community';
 import 'ag-grid-community/styles/ag-grid.css';
 import 'ag-grid-community/styles/ag-theme-alpine.css';
-import { fetchUsers, updateUser, API_BASE } from './api.js';
+import { fetchData, updateData, tableConfigs } from './api.js';
 import { filterModelToRsql, parseRsqlForDisplay } from './rsql.js';
 
 // Register AG Grid modules
 ModuleRegistry.registerModules([AllCommunityModule]);
 
-// User schema - hardcoded as it won't change
-const columnDefs = [
-    { 
-        field: 'id', 
-        headerName: 'ID',
-        width: 100,
-        editable: false,
-        filter: 'agNumberColumnFilter',
-        sortable: true,
-    },
-    { 
-        field: 'uid', 
-        headerName: 'UID',
-        width: 120,
-        editable: false,
-        filter: 'agTextColumnFilter',
-        sortable: true,
-    },
-    { 
-        field: 'name', 
-        headerName: 'Name',
-        width: 150,
-        editable: true,
-        filter: 'agTextColumnFilter',
-        sortable: true,
-    },
-    { 
-        field: 'gender', 
-        headerName: 'Gender',
-        width: 100,
-        editable: true,
-        filter: 'agTextColumnFilter',
-        sortable: true,
-        cellEditor: 'agSelectCellEditor',
-        cellEditorParams: {
-            values: ['male', 'female', 'other']
-        }
-    },
-    { 
-        field: 'email', 
-        headerName: 'Email',
-        width: 200,
-        editable: true,
-        filter: 'agTextColumnFilter',
-        sortable: true,
-    },
-    { 
-        field: 'phone', 
-        headerName: 'Phone',
-        width: 130,
-        editable: true,
-        filter: 'agTextColumnFilter',
-        sortable: true,
-    },
-    { 
-        field: 'dept', 
-        headerName: 'Department',
-        width: 130,
-        editable: true,
-        filter: 'agTextColumnFilter',
-        sortable: true,
-    },
-    { 
-        field: 'grade', 
-        headerName: 'Grade',
-        width: 100,
-        editable: true,
-        filter: 'agTextColumnFilter',
-        sortable: true,
-    },
-    { 
-        field: 'language', 
-        headerName: 'Language',
-        width: 100,
-        editable: true,
-        filter: 'agTextColumnFilter',
-        sortable: true,
-        cellEditor: 'agSelectCellEditor',
-        cellEditorParams: {
-            values: ['en', 'zh']
-        }
-    },
-    { 
-        field: 'region', 
-        headerName: 'Region',
-        width: 110,
-        editable: false,  // Shard key - cannot be changed
-        filter: 'agTextColumnFilter',
-        sortable: true,
-        cellEditor: 'agSelectCellEditor',
-        cellEditorParams: {
-            values: ['Beijing', 'HongKong']
-        }
-    },
-    { 
-        field: 'role', 
-        headerName: 'Role',
-        width: 100,
-        editable: true,
-        filter: 'agTextColumnFilter',
-        sortable: true,
-    },
-    { 
-        field: 'preferTags', 
-        headerName: 'Preferred Tags',
-        width: 180,
-        editable: true,
-        filter: 'agTextColumnFilter',
-        sortable: true,
-        valueFormatter: params => {
-            if (Array.isArray(params.value)) {
-                return params.value.join(', ');
-            }
-            return params.value || '';
-        },
-        valueParser: params => {
-            // Parse comma-separated string back to array
-            if (typeof params.newValue === 'string') {
-                return params.newValue.split(',').map(s => s.trim()).filter(s => s);
-            }
-            return params.newValue;
-        }
-    },
-    { 
-        field: 'obtainedCredits', 
-        headerName: 'Credits',
-        width: 100,
-        editable: true,
-        filter: 'agNumberColumnFilter',
-        sortable: true,
-        cellEditor: 'agNumberCellEditor',
-    },
-    { 
-        field: 'timestamp', 
-        headerName: 'Created',
-        width: 170,
-        editable: false,
-        filter: 'agDateColumnFilter',
-        sortable: true,
-        valueFormatter: params => {
-            if (!params.value) return '';
-            // timestamp is in milliseconds
-            const date = new Date(Number(params.value));
-            return date.toLocaleString();
-        }
-    },
-];
-
-// Grid instance
+// Current table state
+let currentTable = 'users';
 let gridApi = null;
+
+// Get current table config
+function getTableConfig() {
+    return tableConfigs[currentTable];
+}
 
 // Status display helper
 function showStatus(message, type = 'success') {
@@ -175,7 +33,22 @@ function showStatus(message, type = 'success') {
 // Update row count display
 function updateRowCount() {
     const count = gridApi?.getDisplayedRowCount() || 0;
-    document.getElementById('row-count').textContent = `Showing ${count.toLocaleString()} users`;
+    const config = getTableConfig();
+    document.getElementById('row-count').textContent = `Showing ${count.toLocaleString()} ${config.name}`;
+}
+
+// Update page title
+function updateTitle() {
+    const config = getTableConfig();
+    document.getElementById('page-title').textContent = `📊 Helvetia ${config.title}`;
+    document.title = `Helvetia - ${config.title}`;
+}
+
+// Update active tab
+function updateActiveTabs() {
+    document.querySelectorAll('.tab-btn').forEach(btn => {
+        btn.classList.toggle('active', btn.dataset.table === currentTable);
+    });
 }
 
 // Debounce helper for filter changes
@@ -187,9 +60,10 @@ function debounce(fn, delay) {
     };
 }
 
-// Load users from API with current filters
-async function loadUsers() {
-    showStatus('Loading users...', 'loading');
+// Load data from API with current filters
+async function loadData() {
+    const config = getTableConfig();
+    showStatus(`Loading ${config.name}...`, 'loading');
     
     try {
         // Get current filter model and convert to RSQL
@@ -202,14 +76,14 @@ async function loadUsers() {
             console.log('Human readable:', parseRsqlForDisplay(rsqlFilter));
         }
         
-        const users = await fetchUsers(rsqlFilter);
-        gridApi.setGridOption('rowData', users);
+        const data = await fetchData(currentTable, rsqlFilter);
+        gridApi.setGridOption('rowData', data);
         updateRowCount();
         
         const filterMsg = rsqlFilter ? ` (filtered)` : '';
-        showStatus(`Loaded ${users.length.toLocaleString()} users${filterMsg}`, 'success');
+        showStatus(`Loaded ${data.length.toLocaleString()} ${config.name}${filterMsg}`, 'success');
     } catch (error) {
-        console.error('Failed to load users:', error);
+        console.error(`Failed to load ${config.name}:`, error);
         showStatus(`Error: ${error.message}`, 'error');
     }
 }
@@ -217,7 +91,7 @@ async function loadUsers() {
 // Handle filter changes - reload data from server with new filters
 const onFilterChanged = debounce(() => {
     console.log('Filter changed, reloading from server...');
-    loadUsers();
+    loadData();
 }, 300);  // 300ms debounce to avoid too many requests while typing
 
 // Handle cell value changes
@@ -226,11 +100,11 @@ async function onCellValueChanged(event) {
     
     if (oldValue === newValue) return;
     
-    console.log(`Cell changed: ${colDef.field} from "${oldValue}" to "${newValue}" for user ${data.id}`);
+    console.log(`Cell changed: ${colDef.field} from "${oldValue}" to "${newValue}" for id ${data.id}`);
     
     try {
         showStatus('Saving...', 'loading');
-        await updateUser(data);
+        await updateData(currentTable, data);
         showStatus('Saved', 'success');
     } catch (error) {
         console.error('Failed to save:', error);
@@ -244,67 +118,112 @@ async function onCellValueChanged(event) {
 function exportData() {
     if (!gridApi) return;
     
+    const config = getTableConfig();
     gridApi.exportDataAsCsv({
-        fileName: 'users.csv',
+        fileName: `${config.name}.csv`,
         columnSeparator: ',',
     });
     showStatus('Exported to CSV', 'success');
 }
 
-// Grid options
-const gridOptions = {
-    columnDefs,
-    defaultColDef: {
-        resizable: true,
-        sortable: true,
-        filter: true,
-        floatingFilter: true,  // Show filter inputs below headers
-    },
-    rowData: [],
+// Switch to a different table
+function switchTable(tableName) {
+    if (tableName === currentTable) return;
+    if (!tableConfigs[tableName]) {
+        console.error(`Unknown table: ${tableName}`);
+        return;
+    }
     
-    // Enable editing
-    editType: 'fullRow',  // or use undefined for cell-by-cell editing
-    stopEditingWhenCellsLoseFocus: true,
+    currentTable = tableName;
+    const config = getTableConfig();
     
-    // Selection
-    rowSelection: 'multiple',
+    // Update UI
+    updateTitle();
+    updateActiveTabs();
     
-    // Events
-    onCellValueChanged,
-    onFilterChanged,  // Reload from server when filters change
-    onSortChanged: updateRowCount,
-    onGridReady: (params) => {
-        gridApi = params.api;
-        loadUsers();
-    },
+    // Update grid columns
+    gridApi.setGridOption('columnDefs', config.columnDefs);
     
-    // Appearance
-    animateRows: true,
-    pagination: true,
-    paginationPageSize: 100,
-    paginationPageSizeSelector: [50, 100, 500, 1000],
+    // Clear and reload data
+    gridApi.setGridOption('rowData', []);
+    loadData();
+}
+
+// Create grid options
+function createGridOptions() {
+    const config = getTableConfig();
     
-    // Status bar (shows selected count, etc.)
-    enableCellTextSelection: true,
-    ensureDomOrder: true,
-};
+    return {
+        columnDefs: config.columnDefs,
+        defaultColDef: {
+            resizable: true,
+            sortable: true,
+            filter: true,
+            floatingFilter: true,  // Show filter inputs below headers
+        },
+        rowData: [],
+        
+        // Enable editing
+        editType: 'fullRow',
+        stopEditingWhenCellsLoseFocus: true,
+        
+        // Selection
+        rowSelection: 'multiple',
+        
+        // Events
+        onCellValueChanged,
+        onFilterChanged,
+        onSortChanged: updateRowCount,
+        onGridReady: (params) => {
+            gridApi = params.api;
+            loadData();
+        },
+        
+        // Appearance
+        animateRows: true,
+        pagination: true,
+        paginationPageSize: 100,
+        paginationPageSizeSelector: [50, 100, 500, 1000],
+        
+        // Status bar
+        enableCellTextSelection: true,
+        ensureDomOrder: true,
+    };
+}
 
 // Initialize grid
 function initGrid() {
     const gridContainer = document.getElementById('grid-container');
     gridContainer.classList.add('ag-theme-alpine');
     
+    const gridOptions = createGridOptions();
     createGrid(gridContainer, gridOptions);
-    // gridApi is set in onGridReady callback
+    
+    updateTitle();
+    updateActiveTabs();
+}
+
+// Set up tab click handlers
+function initTabs() {
+    document.querySelectorAll('.tab-btn').forEach(btn => {
+        btn.addEventListener('click', () => {
+            switchTable(btn.dataset.table);
+        });
+    });
 }
 
 // Make functions available globally for HTML onclick handlers
-window.loadUsers = loadUsers;
+window.loadData = loadData;
 window.exportData = exportData;
+window.switchTable = switchTable;
 
 // Initialize on DOM ready
 if (document.readyState === 'loading') {
-    document.addEventListener('DOMContentLoaded', initGrid);
+    document.addEventListener('DOMContentLoaded', () => {
+        initTabs();
+        initGrid();
+    });
 } else {
+    initTabs();
     initGrid();
 }

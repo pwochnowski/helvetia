@@ -1,19 +1,18 @@
 /**
  * API client for Helvetia backend
- * Handles protobuf encoding/decoding for User entities
+ * Handles protobuf encoding/decoding for all entities
  */
 
+import { tableConfig as userConfig, decodeUser, encodeUser } from './tables/user.js';
+import { tableConfig as articleConfig, decodeArticle, encodeArticle } from './tables/article.js';
+import { tableConfig as readConfig, decodeRead, encodeRead } from './tables/read.js';
+
 // API base URL - empty string to use Vite proxy in development
-// In production, set this to the actual backend URL
 export const API_BASE = '';
 
-// Simple protobuf decoding for User message
-// Field numbers from user.proto:
-// 1: id (int64), 2: timestamp (int64), 3: uid, 4: name, 5: gender,
-// 6: email, 7: phone, 8: dept, 9: grade, 10: language,
-// 11: region, 12: role, 13: preferTags (repeated), 14: obtainedCredits (int32)
+// ==================== Protobuf Utilities ====================
 
-function decodeVarint(buffer, offset) {
+export function decodeVarint(buffer, offset) {
     let result = 0n;
     let shift = 0n;
     let pos = offset;
@@ -29,108 +28,12 @@ function decodeVarint(buffer, offset) {
     return { value: result, bytesRead: pos - offset };
 }
 
-function decodeString(buffer, offset, length) {
+export function decodeString(buffer, offset, length) {
     const bytes = buffer.slice(offset, offset + length);
     return new TextDecoder().decode(bytes);
 }
 
-function decodeUser(buffer) {
-    const user = {
-        id: 0,
-        timestamp: 0,
-        uid: '',
-        name: '',
-        gender: '',
-        email: '',
-        phone: '',
-        dept: '',
-        grade: '',
-        language: '',
-        region: '',
-        role: '',
-        preferTags: [],
-        obtainedCredits: 0,
-    };
-    
-    let pos = 0;
-    
-    while (pos < buffer.length) {
-        const { value: tag, bytesRead: tagBytes } = decodeVarint(buffer, pos);
-        pos += tagBytes;
-        
-        const fieldNumber = Number(tag >> 3n);
-        const wireType = Number(tag & 7n);
-        
-        if (wireType === 0) {
-            // Varint
-            const { value, bytesRead } = decodeVarint(buffer, pos);
-            pos += bytesRead;
-            
-            switch (fieldNumber) {
-                case 1: user.id = Number(value); break;
-                case 2: user.timestamp = Number(value); break;
-                case 14: user.obtainedCredits = Number(value); break;
-            }
-        } else if (wireType === 2) {
-            // Length-delimited (string)
-            const { value: length, bytesRead: lengthBytes } = decodeVarint(buffer, pos);
-            pos += lengthBytes;
-            const str = decodeString(buffer, pos, Number(length));
-            pos += Number(length);
-            
-            switch (fieldNumber) {
-                case 3: user.uid = str; break;
-                case 4: user.name = str; break;
-                case 5: user.gender = str; break;
-                case 6: user.email = str; break;
-                case 7: user.phone = str; break;
-                case 8: user.dept = str; break;
-                case 9: user.grade = str; break;
-                case 10: user.language = str; break;
-                case 11: user.region = str; break;
-                case 12: user.role = str; break;
-                case 13: user.preferTags.push(str); break;
-            }
-        } else {
-            // Skip unknown wire types
-            console.warn(`Unknown wire type ${wireType} for field ${fieldNumber}`);
-            break;
-        }
-    }
-    
-    return user;
-}
-
-function decodeUserList(buffer) {
-    // UserList has field 1 = repeated User
-    const users = [];
-    let pos = 0;
-    
-    while (pos < buffer.length) {
-        const { value: tag, bytesRead: tagBytes } = decodeVarint(buffer, pos);
-        pos += tagBytes;
-        
-        const fieldNumber = Number(tag >> 3n);
-        const wireType = Number(tag & 7n);
-        
-        if (fieldNumber === 1 && wireType === 2) {
-            // Length-delimited User message
-            const { value: length, bytesRead: lengthBytes } = decodeVarint(buffer, pos);
-            pos += lengthBytes;
-            
-            const userBuffer = buffer.slice(pos, pos + Number(length));
-            users.push(decodeUser(userBuffer));
-            pos += Number(length);
-        } else {
-            break;
-        }
-    }
-    
-    return users;
-}
-
-// Encode a User to protobuf bytes
-function encodeVarint(value) {
+export function encodeVarint(value) {
     const bytes = [];
     let v = BigInt(value);
     
@@ -144,7 +47,7 @@ function encodeVarint(value) {
     return bytes;
 }
 
-function encodeString(fieldNumber, value) {
+export function encodeString(fieldNumber, value) {
     if (!value) return [];
     const encoded = new TextEncoder().encode(value);
     return [
@@ -154,7 +57,7 @@ function encodeString(fieldNumber, value) {
     ];
 }
 
-function encodeVarintField(fieldNumber, value) {
+export function encodeVarintField(fieldNumber, value) {
     if (value === 0 || value === undefined) return [];
     return [
         ...encodeVarint(fieldNumber << 3),
@@ -162,32 +65,37 @@ function encodeVarintField(fieldNumber, value) {
     ];
 }
 
-function encodeUser(user) {
-    const bytes = [
-        ...encodeVarintField(1, user.id),
-        ...encodeVarintField(2, user.timestamp),
-        ...encodeString(3, user.uid),
-        ...encodeString(4, user.name),
-        ...encodeString(5, user.gender),
-        ...encodeString(6, user.email),
-        ...encodeString(7, user.phone),
-        ...encodeString(8, user.dept),
-        ...encodeString(9, user.grade),
-        ...encodeString(10, user.language),
-        ...encodeString(11, user.region),
-        ...encodeString(12, user.role),
-        // preferTags - repeated field
-        ...(user.preferTags || []).flatMap(tag => encodeString(13, tag)),
-        ...encodeVarintField(14, user.obtainedCredits),
-    ];
+// ==================== Generic List Decoder ====================
+
+function decodeList(buffer, decodeItem, fieldNumber = 1) {
+    const items = [];
+    let pos = 0;
     
-    return new Uint8Array(bytes);
+    while (pos < buffer.length) {
+        const { value: tag, bytesRead: tagBytes } = decodeVarint(buffer, pos);
+        pos += tagBytes;
+        
+        const fn = Number(tag >> 3n);
+        const wireType = Number(tag & 7n);
+        
+        if (fn === fieldNumber && wireType === 2) {
+            // Length-delimited message
+            const { value: length, bytesRead: lengthBytes } = decodeVarint(buffer, pos);
+            pos += lengthBytes;
+            
+            const itemBuffer = buffer.slice(pos, pos + Number(length));
+            items.push(decodeItem(itemBuffer, decodeVarint, decodeString));
+            pos += Number(length);
+        } else {
+            break;
+        }
+    }
+    
+    return items;
 }
 
-/**
- * Fetch all users from the API
- * @param {string|null} rsqlFilter - Optional RSQL filter query
- */
+// ==================== User API ====================
+
 export async function fetchUsers(rsqlFilter = null) {
     let url = `${API_BASE}/users`;
     if (rsqlFilter) {
@@ -207,14 +115,11 @@ export async function fetchUsers(rsqlFilter = null) {
     const buffer = await response.arrayBuffer();
     const uint8 = new Uint8Array(buffer);
     
-    return decodeUserList(uint8);
+    return decodeList(uint8, decodeUser);
 }
 
-/**
- * Update a user via the API
- */
 export async function updateUser(user) {
-    const body = encodeUser(user);
+    const body = encodeUser(user, encodeVarintField, encodeString);
     
     const response = await fetch(`${API_BASE}/users/${user.id}`, {
         method: 'PUT',
@@ -229,11 +134,8 @@ export async function updateUser(user) {
     }
 }
 
-/**
- * Create a new user via the API
- */
 export async function createUser(user) {
-    const body = encodeUser(user);
+    const body = encodeUser(user, encodeVarintField, encodeString);
     
     const response = await fetch(`${API_BASE}/users`, {
         method: 'POST',
@@ -248,9 +150,6 @@ export async function createUser(user) {
     }
 }
 
-/**
- * Delete a user via the API
- */
 export async function deleteUser(id) {
     const response = await fetch(`${API_BASE}/users/${id}`, {
         method: 'DELETE',
@@ -258,5 +157,166 @@ export async function deleteUser(id) {
     
     if (!response.ok) {
         throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+    }
+}
+
+// ==================== Article API ====================
+
+export async function fetchArticles(rsqlFilter = null) {
+    let url = `${API_BASE}/articles`;
+    if (rsqlFilter) {
+        url += `?filter=${encodeURIComponent(rsqlFilter)}`;
+    }
+    
+    const response = await fetch(url, {
+        headers: {
+            'Accept': 'application/x-protobuf',
+        },
+    });
+    
+    if (!response.ok) {
+        throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+    }
+    
+    const buffer = await response.arrayBuffer();
+    const uint8 = new Uint8Array(buffer);
+    
+    return decodeList(uint8, decodeArticle);
+}
+
+export async function updateArticle(article) {
+    const body = encodeArticle(article, encodeVarintField, encodeString);
+    
+    const response = await fetch(`${API_BASE}/articles/${article.id}`, {
+        method: 'PUT',
+        headers: {
+            'Content-Type': 'application/x-protobuf',
+        },
+        body,
+    });
+    
+    if (!response.ok) {
+        throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+    }
+}
+
+export async function createArticle(article) {
+    const body = encodeArticle(article, encodeVarintField, encodeString);
+    
+    const response = await fetch(`${API_BASE}/articles`, {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/x-protobuf',
+        },
+        body,
+    });
+    
+    if (!response.ok) {
+        throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+    }
+}
+
+export async function deleteArticle(id) {
+    const response = await fetch(`${API_BASE}/articles/${id}`, {
+        method: 'DELETE',
+    });
+    
+    if (!response.ok) {
+        throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+    }
+}
+
+// ==================== Read API ====================
+
+export async function fetchReads(rsqlFilter = null) {
+    let url = `${API_BASE}/reads`;
+    if (rsqlFilter) {
+        url += `?filter=${encodeURIComponent(rsqlFilter)}`;
+    }
+    
+    const response = await fetch(url, {
+        headers: {
+            'Accept': 'application/x-protobuf',
+        },
+    });
+    
+    if (!response.ok) {
+        throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+    }
+    
+    const buffer = await response.arrayBuffer();
+    const uint8 = new Uint8Array(buffer);
+    
+    return decodeList(uint8, decodeRead);
+}
+
+export async function updateRead(read) {
+    const body = encodeRead(read, encodeVarintField, encodeString);
+    
+    const response = await fetch(`${API_BASE}/reads/${read.id}`, {
+        method: 'PUT',
+        headers: {
+            'Content-Type': 'application/x-protobuf',
+        },
+        body,
+    });
+    
+    if (!response.ok) {
+        throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+    }
+}
+
+export async function createRead(read) {
+    const body = encodeRead(read, encodeVarintField, encodeString);
+    
+    const response = await fetch(`${API_BASE}/reads`, {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/x-protobuf',
+        },
+        body,
+    });
+    
+    if (!response.ok) {
+        throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+    }
+}
+
+export async function deleteRead(id) {
+    const response = await fetch(`${API_BASE}/reads/${id}`, {
+        method: 'DELETE',
+    });
+    
+    if (!response.ok) {
+        throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+    }
+}
+
+// ==================== Generic API Functions ====================
+
+// Map of table configs for easy lookup
+export const tableConfigs = {
+    users: userConfig,
+    articles: articleConfig,
+    reads: readConfig,
+};
+
+// Generic fetch function
+export async function fetchData(tableName, rsqlFilter = null) {
+    switch (tableName) {
+        case 'users': return fetchUsers(rsqlFilter);
+        case 'articles': return fetchArticles(rsqlFilter);
+        case 'reads': return fetchReads(rsqlFilter);
+        default: throw new Error(`Unknown table: ${tableName}`);
+    }
+}
+
+// Generic update function
+export async function updateData(tableName, data) {
+    switch (tableName) {
+        case 'users': return updateUser(data);
+        case 'articles': return updateArticle(data);
+        case 'reads': return updateRead(data);
+        default: throw new Error(`Unknown table: ${tableName}`);
     }
 }

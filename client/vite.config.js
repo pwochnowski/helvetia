@@ -9,6 +9,14 @@ export default defineConfig({
         target: 'http://localhost:8080',
         changeOrigin: true,
       },
+      '/articles': {
+        target: 'http://localhost:8080',
+        changeOrigin: true,
+      },
+      '/reads': {
+        target: 'http://localhost:8080',
+        changeOrigin: true,
+      },
     },
   },
 });

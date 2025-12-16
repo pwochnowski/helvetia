@@ -17,3 +17,7 @@ message Read {
   string commentDetail = 9;
   bool shareOrNot = 10;
 }
+
+message ReadList {
+  repeated Read reads = 1;
+}
