@@ -250,6 +250,12 @@ public class Server {
                 "localhost"
         );
 
+        // Read server port from environment, fallback to 8080
+        int serverPort = Integer.parseInt(System.getenv().getOrDefault(
+                "PORT",
+                "8080"
+        ));
+
         HikariConfig cfg = new HikariConfig();
         cfg.setJdbcUrl(dbUrl);
         cfg.setUsername(dbUser);
@@ -258,7 +264,7 @@ public class Server {
 
         Server server = new Server(db);
         ipAddress(bindAddr);
-        port(8080);
+        port(serverPort);
 
         get("/hello", (req, res) -> "Hello from SparkJava!");
 

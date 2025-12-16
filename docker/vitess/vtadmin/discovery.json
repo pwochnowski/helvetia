@@ -9,7 +9,12 @@
   "vtgates": [
     {
       "host": {
-        "hostname": "vtgate:15999"
+        "hostname": "vtgate_cell1:15999"
+      }
+    },
+    {
+      "host": {
+        "hostname": "vtgate_cell2:15999"
       }
     }
   ]

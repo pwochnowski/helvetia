@@ -154,11 +154,83 @@
             font-size: 13px;
             color: #666;
         }
+        .server-toggle {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            margin-left: auto;
+            padding: 8px 12px;
+            background: #f8f9fa;
+            border-radius: 6px;
+            border: 1px solid #e0e0e0;
+        }
+        .server-toggle label {
+            font-size: 13px;
+            color: #555;
+            font-weight: 500;
+        }
+        .server-switch {
+            display: flex;
+            background: #e0e0e0;
+            border-radius: 20px;
+            padding: 3px;
+        }
+        .server-switch button {
+            padding: 6px 14px;
+            border: none;
+            border-radius: 17px;
+            cursor: pointer;
+            font-size: 12px;
+            font-weight: 500;
+            transition: all 0.2s;
+            background: transparent;
+            color: #666;
+        }
+        .server-switch button.active {
+            background: #4a90d9;
+            color: white;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.15);
+        }
+        .server-switch button:hover:not(.active) {
+            background: #d0d0d0;
+        }
+        .server-indicator {
+            font-size: 11px;
+            padding: 2px 8px;
+            border-radius: 10px;
+            font-weight: 500;
+        }
+        .server-indicator.cell1 {
+            background: #e3f2fd;
+            color: #1565c0;
+        }
+        .server-indicator.cell2 {
+            background: #fff3e0;
+            color: #e65100;
+        }
+        .header-row {
+            display: flex;
+            align-items: center;
+            margin-bottom: 20px;
+        }
+        .header-row h1 {
+            margin: 0;
+        }
     </style>
 </head>
 <body>
     <div class="container">
-        <h1 id="page-title">📊 Helvetia User Management</h1>
+        <div class="header-row">
+            <h1 id="page-title">📊 Helvetia User Management</h1>
+            <div class="server-toggle">
+                <label>Server Region:</label>
+                <div class="server-switch">
+                    <button id="server-cell1-btn" class="active" onclick="switchServer('cell1')">🇨🇳 Beijing</button>
+                    <button id="server-cell2-btn" onclick="switchServer('cell2')">🇭🇰 HongKong</button>
+                </div>
+                <span id="server-indicator" class="server-indicator cell1">Cell1</span>
+            </div>
+        </div>
         
         <div class="tabs">
             <button class="tab-btn active" data-table="users">👤 Users</button>

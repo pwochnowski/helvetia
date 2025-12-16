@@ -1,7 +1,7 @@
 import { createGrid, ModuleRegistry, AllCommunityModule } from 'ag-grid-community';
 import 'ag-grid-community/styles/ag-grid.css';
 import 'ag-grid-community/styles/ag-theme-alpine.css';
-import { fetchData, updateData, tableConfigs } from './api.js';
+import { fetchData, updateData, tableConfigs, setServer, getCurrentServer } from './api.js';
 import { filterModelToRsql, parseRsqlForDisplay } from './rsql.js';
 
 // Register AG Grid modules
@@ -301,12 +301,33 @@ function initTabs() {
     });
 }
 
+// Switch server region
+function switchServer(server) {
+    if (setServer(server)) {
+        // Update UI buttons
+        document.getElementById('server-cell1-btn').classList.toggle('active', server === 'cell1');
+        document.getElementById('server-cell2-btn').classList.toggle('active', server === 'cell2');
+        
+        // Update indicator
+        const indicator = document.getElementById('server-indicator');
+        indicator.textContent = server === 'cell1' ? 'Cell1' : 'Cell2';
+        indicator.className = `server-indicator ${server}`;
+        
+        // Reload data from new server
+        currentPage = 0;
+        loadData();
+        
+        showStatus(`Switched to ${server === 'cell1' ? 'Beijing (Cell1)' : 'HongKong (Cell2)'} server`, 'success');
+    }
+}
+
 // Make functions available globally for HTML onclick handlers
 window.loadData = loadData;
 window.prevPage = prevPage;
 window.nextPage = nextPage;
 window.exportData = exportData;
 window.switchTable = switchTable;
+window.switchServer = switchServer;
 
 // Initialize on DOM ready
 if (document.readyState === 'loading') {

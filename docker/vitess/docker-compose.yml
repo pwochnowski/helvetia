@@ -5,6 +5,11 @@
 #   Cell2 (HongKong/DBMS2): User(HongKong), Article(science+technology), Read, Be-Read(science+technology), Popular-Rank(weekly/monthly)
 #
 # VReplication handles Article and Be-Read (science category) replication between cells
+#
+# VTGate per Zone:
+#   vtgate_cell1 (port 15306): Primary affinity to cell1, serves Beijing region apps
+#   vtgate_cell2 (port 15307): Primary affinity to cell2, serves HongKong region apps
+#   Each VTGate can still route cross-cell for writes to PRIMARY tablets
 
 services:
   # ===========================================
@@ -46,9 +51,10 @@ services:
       - vitess_net
 
   # ===========================================
-  # VTGATE - Query Router (serves both cells)
+  # VTGATE CELL1 - Query Router (Beijing region)
+  # Prefers cell1 tablets for reads, can route to cell2 when needed
   # ===========================================
-  vtgate:
+  vtgate_cell1:
     platform: linux/amd64
     command:
       - sh
@@ -63,8 +69,36 @@ services:
     image: vitess/lite:v23.0.0
     ports:
       - 15099:8080
-      - "15999"
       - 15306:15306
+    expose:
+      - "15999"
+    volumes:
+      - .:/script
+    networks:
+      - vitess_net
+
+  # ===========================================
+  # VTGATE CELL2 - Query Router (HongKong region)
+  # Prefers cell2 tablets for reads, can route to cell1 when needed
+  # ===========================================
+  vtgate_cell2:
+    platform: linux/amd64
+    command:
+      - sh
+      - -c
+      - '/script/run-forever.sh /vt/bin/vtgate --topo-implementation consul --topo-global-server-address
+        consul1:8500 --topo-global-root vitess/global --logtostderr=true --port 8080 --grpc-port
+        15999 --mysql-server-port 15306 --mysql-auth-server-impl none --cell cell2 --cells-to-watch
+        cell1,cell2 --tablet-types-to-wait PRIMARY,REPLICA --service-map "grpc-vtgateservice"
+        --normalize-queries=true'
+    depends_on:
+      - vtctld
+    image: vitess/lite:v23.0.0
+    ports:
+      - 15098:8080
+      - 15307:15306
+    expose:
+      - "15999"
     volumes:
       - .:/script
     networks:
@@ -1331,7 +1365,8 @@ services:
           > /dev/stdout 2>&1
     depends_on:
       - vtctld
-      - vtgate
+      - vtgate_cell1
+      - vtgate_cell2
     image: vitess/lite:v23.0.0
     ports:
       - 14200:14200

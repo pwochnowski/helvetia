@@ -7,7 +7,37 @@ import { tableConfig as userConfig, decodeUser, encodeUser } from './tables/user
 import { tableConfig as articleConfig, decodeArticle, encodeArticle } from './tables/article.js';
 import { tableConfig as readConfig, decodeRead, encodeRead } from './tables/read.js';
 
-// API base URL - empty string to use Vite proxy in development
+// Server configuration for multi-region setup
+// In development: Vite proxies /api/cell1/* and /api/cell2/* to respective servers
+// In production: These would be actual server URLs
+const SERVER_CONFIG = {
+    cell1: '/api/cell1',  // Beijing region - connects to vtgate_cell1
+    cell2: '/api/cell2',  // HongKong region - connects to vtgate_cell2
+};
+
+// Current active server (default to cell1)
+let currentServer = 'cell1';
+
+// Get API base URL for current server
+export function getApiBase() {
+    return SERVER_CONFIG[currentServer];
+}
+
+// Switch to a different server
+export function setServer(server) {
+    if (SERVER_CONFIG[server]) {
+        currentServer = server;
+        return true;
+    }
+    return false;
+}
+
+// Get current server
+export function getCurrentServer() {
+    return currentServer;
+}
+
+// Legacy export for backward compatibility
 export const API_BASE = '';
 
 // ==================== Protobuf Utilities ====================
@@ -129,7 +159,7 @@ export async function fetchUsers(rsqlFilter = null, limit = 100, offset = 0, sor
     if (sortBy) params.set('sortBy', sortBy);
     if (sortDir) params.set('sortDir', sortDir);
     
-    let url = `${API_BASE}/users`;
+    let url = `${getApiBase()}/users`;
     const queryString = params.toString();
     if (queryString) url += `?${queryString}`;
     
@@ -152,7 +182,7 @@ export async function fetchUsers(rsqlFilter = null, limit = 100, offset = 0, sor
 export async function updateUser(user) {
     const body = encodeUser(user, encodeVarintField, encodeString);
     
-    const response = await fetch(`${API_BASE}/users/${user.id}`, {
+    const response = await fetch(`${getApiBase()}/users/${user.id}`, {
         method: 'PUT',
         headers: {
             'Content-Type': 'application/x-protobuf',
@@ -168,7 +198,7 @@ export async function updateUser(user) {
 export async function createUser(user) {
     const body = encodeUser(user, encodeVarintField, encodeString);
     
-    const response = await fetch(`${API_BASE}/users`, {
+    const response = await fetch(`${getApiBase()}/users`, {
         method: 'POST',
         headers: {
             'Content-Type': 'application/x-protobuf',
@@ -182,7 +212,7 @@ export async function createUser(user) {
 }
 
 export async function deleteUser(id) {
-    const response = await fetch(`${API_BASE}/users/${id}`, {
+    const response = await fetch(`${getApiBase()}/users/${id}`, {
         method: 'DELETE',
     });
     
@@ -205,7 +235,7 @@ export async function fetchArticles(rsqlFilter = null, limit = 100, offset = 0, 
     if (sortBy) params.set('sortBy', sortBy);
     if (sortDir) params.set('sortDir', sortDir);
     
-    let url = `${API_BASE}/articles`;
+    let url = `${getApiBase()}/articles`;
     const queryString = params.toString();
     if (queryString) url += `?${queryString}`;
     
@@ -228,7 +258,7 @@ export async function fetchArticles(rsqlFilter = null, limit = 100, offset = 0, 
 export async function updateArticle(article) {
     const body = encodeArticle(article, encodeVarintField, encodeString);
     
-    const response = await fetch(`${API_BASE}/articles/${article.id}`, {
+    const response = await fetch(`${getApiBase()}/articles/${article.id}`, {
         method: 'PUT',
         headers: {
             'Content-Type': 'application/x-protobuf',
@@ -244,7 +274,7 @@ export async function updateArticle(article) {
 export async function createArticle(article) {
     const body = encodeArticle(article, encodeVarintField, encodeString);
     
-    const response = await fetch(`${API_BASE}/articles`, {
+    const response = await fetch(`${getApiBase()}/articles`, {
         method: 'POST',
         headers: {
             'Content-Type': 'application/x-protobuf',
@@ -258,7 +288,7 @@ export async function createArticle(article) {
 }
 
 export async function deleteArticle(id) {
-    const response = await fetch(`${API_BASE}/articles/${id}`, {
+    const response = await fetch(`${getApiBase()}/articles/${id}`, {
         method: 'DELETE',
     });
     
@@ -281,7 +311,7 @@ export async function fetchReads(rsqlFilter = null, limit = 100, offset = 0, sor
     if (sortBy) params.set('sortBy', sortBy);
     if (sortDir) params.set('sortDir', sortDir);
     
-    let url = `${API_BASE}/reads`;
+    let url = `${getApiBase()}/reads`;
     const queryString = params.toString();
     if (queryString) url += `?${queryString}`;
     
@@ -304,7 +334,7 @@ export async function fetchReads(rsqlFilter = null, limit = 100, offset = 0, sor
 export async function updateRead(read) {
     const body = encodeRead(read, encodeVarintField, encodeString);
     
-    const response = await fetch(`${API_BASE}/reads/${read.id}`, {
+    const response = await fetch(`${getApiBase()}/reads/${read.id}`, {
         method: 'PUT',
         headers: {
             'Content-Type': 'application/x-protobuf',
@@ -320,7 +350,7 @@ export async function updateRead(read) {
 export async function createRead(read) {
     const body = encodeRead(read, encodeVarintField, encodeString);
     
-    const response = await fetch(`${API_BASE}/reads`, {
+    const response = await fetch(`${getApiBase()}/reads`, {
         method: 'POST',
         headers: {
             'Content-Type': 'application/x-protobuf',
@@ -334,7 +364,7 @@ export async function createRead(read) {
 }
 
 export async function deleteRead(id) {
-    const response = await fetch(`${API_BASE}/reads/${id}`, {
+    const response = await fetch(`${getApiBase()}/reads/${id}`, {
         method: 'DELETE',
     });
     
