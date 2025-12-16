@@ -149,7 +149,7 @@ run_bulk_insert() {
     echo "=============================================="
     
     # Run the bulk insert script
-    python3 "${SCRIPT_DIR}/bulk_insert.py" \
+    uv run "${SCRIPT_DIR}/bulk_insert.py" \
         --host "$VTGATE_HOST" \
         --port "$VTGATE_PORT" \
         --users "$USERS" \
