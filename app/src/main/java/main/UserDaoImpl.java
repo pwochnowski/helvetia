@@ -147,14 +147,61 @@ public class UserDaoImpl implements UserDao {
     
     @Override
     public List<User> list(String rsqlFilter) throws Exception {
+        return list(rsqlFilter, 10000, 0);
+    }
+    
+    @Override
+    public List<User> list(String rsqlFilter, int limit, int offset) throws Exception {
         // Base query
         String baseSql = "SELECT id, timestamp, uid, name, gender, email, phone, dept, grade, language, region, role, preferTags, obtainedCredits FROM user_keyspace.user";
         
         // Convert RSQL to SQL WHERE clause
         RsqlToSql.SqlResult filterResult = rsqlConverter.convert(rsqlFilter);
         
-        // Build final query
-        String sql = baseSql + " WHERE " + filterResult.whereClause + " ORDER BY id LIMIT 10000";
+        // Build final query with offset-based pagination
+        String sql = baseSql + " WHERE " + filterResult.whereClause + " ORDER BY id LIMIT ? OFFSET ?";
+
+        try (Connection conn = db.getConnection();
+             PreparedStatement st = conn.prepareStatement(sql)) {
+
+            // Set parameters from RSQL conversion
+            int paramIndex = 1;
+            for (Object param : filterResult.parameters) {
+                if (param instanceof Long) {
+                    st.setLong(paramIndex, (Long) param);
+                } else if (param instanceof Double) {
+                    st.setDouble(paramIndex, (Double) param);
+                } else if (param instanceof Integer) {
+                    st.setInt(paramIndex, (Integer) param);
+                } else {
+                    st.setString(paramIndex, param.toString());
+                }
+                paramIndex++;
+            }
+            
+            // Set limit and offset parameters
+            st.setInt(paramIndex++, limit);
+            st.setInt(paramIndex, offset);
+
+            ResultSet rs = st.executeQuery();
+            List<User> out = new ArrayList<>();
+
+            while (rs.next()) {
+                out.add(fromResultSet(rs));
+            }
+
+            return out;
+        }
+    }
+    
+    @Override
+    public long count(String rsqlFilter) throws Exception {
+        String baseSql = "SELECT COUNT(*) FROM user_keyspace.user";
+        
+        // Convert RSQL to SQL WHERE clause
+        RsqlToSql.SqlResult filterResult = rsqlConverter.convert(rsqlFilter);
+        
+        String sql = baseSql + " WHERE " + filterResult.whereClause;
 
         try (Connection conn = db.getConnection();
              PreparedStatement st = conn.prepareStatement(sql)) {
@@ -175,13 +222,10 @@ public class UserDaoImpl implements UserDao {
             }
 
             ResultSet rs = st.executeQuery();
-            List<User> out = new ArrayList<>();
-
-            while (rs.next()) {
-                out.add(fromResultSet(rs));
+            if (rs.next()) {
+                return rs.getLong(1);
             }
-
-            return out;
+            return 0;
         }
     }
 }

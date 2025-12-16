@@ -11,6 +11,13 @@ ModuleRegistry.registerModules([AllCommunityModule]);
 let currentTable = 'users';
 let gridApi = null;
 
+// Server-side pagination state
+const PAGE_SIZE = 100;
+let currentPage = 0;
+let totalCount = 0;
+let isLoading = false;
+let currentFilter = null;
+
 // Get current table config
 function getTableConfig() {
     return tableConfigs[currentTable];
@@ -30,11 +37,39 @@ function showStatus(message, type = 'success') {
     }
 }
 
-// Update row count display
+// Update row count display with total and current page info
 function updateRowCount() {
-    const count = gridApi?.getDisplayedRowCount() || 0;
     const config = getTableConfig();
-    document.getElementById('row-count').textContent = `Showing ${count.toLocaleString()} ${config.name}`;
+    const totalPages = Math.ceil(totalCount / PAGE_SIZE);
+    const displayPage = currentPage + 1;
+    const startRow = currentPage * PAGE_SIZE + 1;
+    const endRow = Math.min((currentPage + 1) * PAGE_SIZE, totalCount);
+    
+    if (totalCount > 0) {
+        document.getElementById('row-count').textContent = 
+            `Showing ${startRow.toLocaleString()}-${endRow.toLocaleString()} of ${totalCount.toLocaleString()} ${config.name} (Page ${displayPage} of ${totalPages})`;
+    } else {
+        document.getElementById('row-count').textContent = `No ${config.name} found`;
+    }
+}
+
+// Update pagination controls
+function updatePaginationControls() {
+    const totalPages = Math.ceil(totalCount / PAGE_SIZE);
+    
+    const prevBtn = document.getElementById('prev-page-btn');
+    const nextBtn = document.getElementById('next-page-btn');
+    const pageInfo = document.getElementById('page-info');
+    
+    if (prevBtn) {
+        prevBtn.disabled = currentPage === 0 || isLoading;
+    }
+    if (nextBtn) {
+        nextBtn.disabled = currentPage >= totalPages - 1 || isLoading;
+    }
+    if (pageInfo) {
+        pageInfo.textContent = `Page ${currentPage + 1} of ${totalPages || 1}`;
+    }
 }
 
 // Update page title
@@ -60,38 +95,74 @@ function debounce(fn, delay) {
     };
 }
 
-// Load data from API with current filters
-async function loadData() {
+// Load data for current page
+async function loadPage(page = 0) {
+    if (isLoading) return;
+    
     const config = getTableConfig();
+    isLoading = true;
+    currentPage = page;
+    
     showStatus(`Loading ${config.name}...`, 'loading');
+    updatePaginationControls();
     
     try {
         // Get current filter model and convert to RSQL
         const filterModel = gridApi?.getFilterModel() || {};
-        const rsqlFilter = filterModelToRsql(filterModel);
+        currentFilter = filterModelToRsql(filterModel);
         
         // Debug: show the RSQL in console
-        if (rsqlFilter) {
-            console.log('RSQL Filter:', rsqlFilter);
-            console.log('Human readable:', parseRsqlForDisplay(rsqlFilter));
+        if (currentFilter) {
+            console.log('RSQL Filter:', currentFilter);
+            console.log('Human readable:', parseRsqlForDisplay(currentFilter));
         }
         
-        const data = await fetchData(currentTable, rsqlFilter);
-        gridApi.setGridOption('rowData', data);
-        updateRowCount();
+        const offset = page * PAGE_SIZE;
+        const result = await fetchData(currentTable, currentFilter, PAGE_SIZE, offset);
         
-        const filterMsg = rsqlFilter ? ` (filtered)` : '';
-        showStatus(`Loaded ${data.length.toLocaleString()} ${config.name}${filterMsg}`, 'success');
+        // Update total count from server
+        totalCount = result.totalCount;
+        
+        // Set page data in grid
+        gridApi.setGridOption('rowData', result.items);
+        updateRowCount();
+        updatePaginationControls();
+        
+        const filterMsg = currentFilter ? ` (filtered)` : '';
+        showStatus(`Loaded page ${page + 1} of ${config.name}${filterMsg}`, 'success');
     } catch (error) {
         console.error(`Failed to load ${config.name}:`, error);
         showStatus(`Error: ${error.message}`, 'error');
+    } finally {
+        isLoading = false;
+        updatePaginationControls();
+    }
+}
+
+// Load first page (reset)
+async function loadData() {
+    await loadPage(0);
+}
+
+// Navigate to previous page
+async function prevPage() {
+    if (currentPage > 0) {
+        await loadPage(currentPage - 1);
+    }
+}
+
+// Navigate to next page
+async function nextPage() {
+    const totalPages = Math.ceil(totalCount / PAGE_SIZE);
+    if (currentPage < totalPages - 1) {
+        await loadPage(currentPage + 1);
     }
 }
 
 // Handle filter changes - reload data from server with new filters
 const onFilterChanged = debounce(() => {
     console.log('Filter changed, reloading from server...');
-    loadData();
+    loadPage(0);  // Reset to first page when filter changes
 }, 300);  // 300ms debounce to avoid too many requests while typing
 
 // Handle cell value changes
@@ -144,9 +215,11 @@ function switchTable(tableName) {
     // Update grid columns
     gridApi.setGridOption('columnDefs', config.columnDefs);
     
-    // Clear and reload data
+    // Reset and reload data
+    currentPage = 0;
+    totalCount = 0;
     gridApi.setGridOption('rowData', []);
-    loadData();
+    loadPage(0);
 }
 
 // Create grid options
@@ -173,17 +246,16 @@ function createGridOptions() {
         // Events
         onCellValueChanged,
         onFilterChanged,
-        onSortChanged: updateRowCount,
         onGridReady: (params) => {
             gridApi = params.api;
-            loadData();
+            loadPage(0);
         },
         
         // Appearance
         animateRows: true,
-        pagination: true,
-        paginationPageSize: 100,
-        paginationPageSizeSelector: [50, 100, 500, 1000],
+        
+        // Disable AG Grid's built-in pagination since we're doing server-side
+        pagination: false,
         
         // Status bar
         enableCellTextSelection: true,
@@ -214,6 +286,8 @@ function initTabs() {
 
 // Make functions available globally for HTML onclick handlers
 window.loadData = loadData;
+window.prevPage = prevPage;
+window.nextPage = nextPage;
 window.exportData = exportData;
 window.switchTable = switchTable;
 

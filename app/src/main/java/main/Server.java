@@ -60,9 +60,27 @@ public class Server {
             // Get optional RSQL filter from query parameter
             String filter = req.queryParams("filter");
             
-            final var list = dao.list(filter);  // List<User>
+            // Pagination parameters
+            int limit = 100;
+            String limitParam = req.queryParams("limit");
+            if (limitParam != null) {
+                limit = Math.min(Integer.parseInt(limitParam), 10000);
+            }
+            
+            int offset = 0;
+            String offsetParam = req.queryParams("offset");
+            if (offsetParam != null) {
+                offset = Integer.parseInt(offsetParam);
+            }
+            
+            // Get total count and list in parallel (same filter)
+            final long totalCount = dao.count(filter);
+            final var list = dao.list(filter, limit, offset);
 
-            final var out = UserList.newBuilder().addAllUsers(list).build();
+            final var out = UserList.newBuilder()
+                .addAllUsers(list)
+                .setTotalCount(totalCount)
+                .build();
             res.type("application/x-protobuf");
             return out.toByteArray();
         });
@@ -104,9 +122,27 @@ public class Server {
         get("/articles", (req, res) -> {
             String filter = req.queryParams("filter");
             
-            final var list = dao.list(filter);
+            // Pagination parameters
+            int limit = 100;
+            String limitParam = req.queryParams("limit");
+            if (limitParam != null) {
+                limit = Math.min(Integer.parseInt(limitParam), 10000);
+            }
+            
+            int offset = 0;
+            String offsetParam = req.queryParams("offset");
+            if (offsetParam != null) {
+                offset = Integer.parseInt(offsetParam);
+            }
+            
+            // Get total count and list
+            final long totalCount = dao.count(filter);
+            final var list = dao.list(filter, limit, offset);
 
-            final var out = ArticleList.newBuilder().addAllArticles(list).build();
+            final var out = ArticleList.newBuilder()
+                .addAllArticles(list)
+                .setTotalCount(totalCount)
+                .build();
             res.type("application/x-protobuf");
             return out.toByteArray();
         });
@@ -148,9 +184,27 @@ public class Server {
         get("/reads", (req, res) -> {
             String filter = req.queryParams("filter");
             
-            final var list = dao.list(filter);
+            // Pagination parameters
+            int limit = 100;
+            String limitParam = req.queryParams("limit");
+            if (limitParam != null) {
+                limit = Math.min(Integer.parseInt(limitParam), 10000);
+            }
+            
+            int offset = 0;
+            String offsetParam = req.queryParams("offset");
+            if (offsetParam != null) {
+                offset = Integer.parseInt(offsetParam);
+            }
+            
+            // Get total count and list
+            final long totalCount = dao.count(filter);
+            final var list = dao.list(filter, limit, offset);
 
-            final var out = ReadList.newBuilder().addAllReads(list).build();
+            final var out = ReadList.newBuilder()
+                .addAllReads(list)
+                .setTotalCount(totalCount)
+                .build();
             res.type("application/x-protobuf");
             return out.toByteArray();
         });

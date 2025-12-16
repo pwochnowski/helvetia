@@ -15,4 +15,18 @@ public interface ReadDao {
      * @param rsqlFilter RSQL filter string, or null for no filtering
      */
     List<Read> list(String rsqlFilter) throws Exception;
+    
+    /**
+     * List reads with pagination support
+     * @param rsqlFilter RSQL filter string, or null for no filtering
+     * @param limit Maximum number of records to return
+     * @param offset Number of records to skip
+     */
+    List<Read> list(String rsqlFilter, int limit, int offset) throws Exception;
+    
+    /**
+     * Count total reads matching filter
+     * @param rsqlFilter RSQL filter string, or null for no filtering
+     */
+    long count(String rsqlFilter) throws Exception;
 }

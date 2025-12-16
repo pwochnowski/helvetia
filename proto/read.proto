@@ -20,4 +20,5 @@ message Read {
 
 message ReadList {
   repeated Read reads = 1;
+  int64 totalCount = 2;
 }

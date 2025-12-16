@@ -25,4 +25,5 @@ message User {
 
 message UserList {
   repeated User users = 1;
+  int64 totalCount = 2;
 }

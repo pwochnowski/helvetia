@@ -67,8 +67,13 @@ export function encodeVarintField(fieldNumber, value) {
 
 // ==================== Generic List Decoder ====================
 
-function decodeList(buffer, decodeItem, fieldNumber = 1) {
+/**
+ * Decode a protobuf list message with items (field 1) and totalCount (field 2)
+ * @returns {{ items: array, totalCount: number }}
+ */
+function decodeListWithCount(buffer, decodeItem) {
     const items = [];
+    let totalCount = 0;
     let pos = 0;
     
     while (pos < buffer.length) {
@@ -78,29 +83,53 @@ function decodeList(buffer, decodeItem, fieldNumber = 1) {
         const fn = Number(tag >> 3n);
         const wireType = Number(tag & 7n);
         
-        if (fn === fieldNumber && wireType === 2) {
-            // Length-delimited message
+        if (fn === 1 && wireType === 2) {
+            // Field 1: Length-delimited message (items)
             const { value: length, bytesRead: lengthBytes } = decodeVarint(buffer, pos);
             pos += lengthBytes;
             
             const itemBuffer = buffer.slice(pos, pos + Number(length));
             items.push(decodeItem(itemBuffer, decodeVarint, decodeString));
             pos += Number(length);
+        } else if (fn === 2 && wireType === 0) {
+            // Field 2: Varint (totalCount)
+            const { value, bytesRead } = decodeVarint(buffer, pos);
+            totalCount = Number(value);
+            pos += bytesRead;
         } else {
-            break;
+            // Unknown field, skip
+            if (wireType === 0) {
+                // Varint - read and discard
+                const { bytesRead } = decodeVarint(buffer, pos);
+                pos += bytesRead;
+            } else if (wireType === 2) {
+                // Length-delimited - read length and skip
+                const { value: length, bytesRead: lengthBytes } = decodeVarint(buffer, pos);
+                pos += lengthBytes + Number(length);
+            } else {
+                break;
+            }
         }
     }
     
-    return items;
+    return { items, totalCount };
 }
 
 // ==================== User API ====================
 
-export async function fetchUsers(rsqlFilter = null) {
+/**
+ * Fetch users with pagination
+ * @returns {{ items: array, totalCount: number }}
+ */
+export async function fetchUsers(rsqlFilter = null, limit = 100, offset = 0) {
+    const params = new URLSearchParams();
+    if (rsqlFilter) params.set('filter', rsqlFilter);
+    params.set('limit', limit.toString());
+    params.set('offset', offset.toString());
+    
     let url = `${API_BASE}/users`;
-    if (rsqlFilter) {
-        url += `?filter=${encodeURIComponent(rsqlFilter)}`;
-    }
+    const queryString = params.toString();
+    if (queryString) url += `?${queryString}`;
     
     const response = await fetch(url, {
         headers: {
@@ -115,7 +144,7 @@ export async function fetchUsers(rsqlFilter = null) {
     const buffer = await response.arrayBuffer();
     const uint8 = new Uint8Array(buffer);
     
-    return decodeList(uint8, decodeUser);
+    return decodeListWithCount(uint8, decodeUser);
 }
 
 export async function updateUser(user) {
@@ -162,11 +191,19 @@ export async function deleteUser(id) {
 
 // ==================== Article API ====================
 
-export async function fetchArticles(rsqlFilter = null) {
+/**
+ * Fetch articles with pagination
+ * @returns {{ items: array, totalCount: number }}
+ */
+export async function fetchArticles(rsqlFilter = null, limit = 100, offset = 0) {
+    const params = new URLSearchParams();
+    if (rsqlFilter) params.set('filter', rsqlFilter);
+    params.set('limit', limit.toString());
+    params.set('offset', offset.toString());
+    
     let url = `${API_BASE}/articles`;
-    if (rsqlFilter) {
-        url += `?filter=${encodeURIComponent(rsqlFilter)}`;
-    }
+    const queryString = params.toString();
+    if (queryString) url += `?${queryString}`;
     
     const response = await fetch(url, {
         headers: {
@@ -181,7 +218,7 @@ export async function fetchArticles(rsqlFilter = null) {
     const buffer = await response.arrayBuffer();
     const uint8 = new Uint8Array(buffer);
     
-    return decodeList(uint8, decodeArticle);
+    return decodeListWithCount(uint8, decodeArticle);
 }
 
 export async function updateArticle(article) {
@@ -228,11 +265,19 @@ export async function deleteArticle(id) {
 
 // ==================== Read API ====================
 
-export async function fetchReads(rsqlFilter = null) {
+/**
+ * Fetch reads with pagination
+ * @returns {{ items: array, totalCount: number }}
+ */
+export async function fetchReads(rsqlFilter = null, limit = 100, offset = 0) {
+    const params = new URLSearchParams();
+    if (rsqlFilter) params.set('filter', rsqlFilter);
+    params.set('limit', limit.toString());
+    params.set('offset', offset.toString());
+    
     let url = `${API_BASE}/reads`;
-    if (rsqlFilter) {
-        url += `?filter=${encodeURIComponent(rsqlFilter)}`;
-    }
+    const queryString = params.toString();
+    if (queryString) url += `?${queryString}`;
     
     const response = await fetch(url, {
         headers: {
@@ -247,7 +292,7 @@ export async function fetchReads(rsqlFilter = null) {
     const buffer = await response.arrayBuffer();
     const uint8 = new Uint8Array(buffer);
     
-    return decodeList(uint8, decodeRead);
+    return decodeListWithCount(uint8, decodeRead);
 }
 
 export async function updateRead(read) {
@@ -301,12 +346,15 @@ export const tableConfigs = {
     reads: readConfig,
 };
 
-// Generic fetch function
-export async function fetchData(tableName, rsqlFilter = null) {
+/**
+ * Generic fetch function with pagination
+ * @returns {{ items: array, totalCount: number }}
+ */
+export async function fetchData(tableName, rsqlFilter = null, limit = 100, offset = 0) {
     switch (tableName) {
-        case 'users': return fetchUsers(rsqlFilter);
-        case 'articles': return fetchArticles(rsqlFilter);
-        case 'reads': return fetchReads(rsqlFilter);
+        case 'users': return fetchUsers(rsqlFilter, limit, offset);
+        case 'articles': return fetchArticles(rsqlFilter, limit, offset);
+        case 'reads': return fetchReads(rsqlFilter, limit, offset);
         default: throw new Error(`Unknown table: ${tableName}`);
     }
 }

@@ -15,5 +15,19 @@ public interface UserDao {
      * @param rsqlFilter RSQL filter string, or null for no filtering
      */
     List<User> list(String rsqlFilter) throws Exception;
+    
+    /**
+     * List users with pagination support
+     * @param rsqlFilter RSQL filter string, or null for no filtering
+     * @param limit Maximum number of records to return
+     * @param offset Number of records to skip
+     */
+    List<User> list(String rsqlFilter, int limit, int offset) throws Exception;
+    
+    /**
+     * Count total users matching filter
+     * @param rsqlFilter RSQL filter string, or null for no filtering
+     */
+    long count(String rsqlFilter) throws Exception;
 }
 

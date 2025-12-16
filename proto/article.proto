@@ -22,4 +22,5 @@ message Article {
 
 message ArticleList {
   repeated Article articles = 1;
+  int64 totalCount = 2;
 }
