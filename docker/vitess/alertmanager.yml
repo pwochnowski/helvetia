@@ -1,0 +1,20 @@
+global:
+  resolve_timeout: 5m
+  smtp_smarthost: 'smtp.gmail.com:587'
+  smtp_from: 'alerts@helvetia.local'
+  smtp_require_tls: true
+  smtp_auth_username: 'thomas0299@gmail.com'
+  smtp_auth_password: 'XXX'
+
+route:
+  receiver: team-email
+  group_by: ['alertname', 'instance']
+  group_wait: 10s
+  group_interval: 2m
+  repeat_interval: 1h
+
+receivers:
+  - name: team-email
+    email_configs:
+      - to: 'thomas0299@gmail.com'
+        send_resolved: true
