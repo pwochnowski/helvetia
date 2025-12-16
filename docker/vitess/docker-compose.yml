@@ -173,7 +173,6 @@ services:
       - CELL=cell1
       - KEYSPACE=user_keyspace
       - SHARD=-80
-      - ROLE=primary
       - VTHOST=vttablet_user_cell1_primary
       - EXTERNAL_DB=0
       - SLEEPTIME=30
@@ -215,7 +214,6 @@ services:
       - CELL=cell1
       - KEYSPACE=user_keyspace
       - SHARD=-80
-      - ROLE=replica
       - VTHOST=vttablet_user_cell1_replica
       - EXTERNAL_DB=0
       - SLEEPTIME=30
@@ -259,7 +257,6 @@ services:
       - CELL=cell1
       - KEYSPACE=article_keyspace
       - SHARD=-80
-      - ROLE=primary
       - VTHOST=vttablet_article_cell1_primary
       - EXTERNAL_DB=0
       - SLEEPTIME=30
@@ -301,7 +298,6 @@ services:
       - CELL=cell1
       - KEYSPACE=article_keyspace
       - SHARD=-80
-      - ROLE=replica
       - VTHOST=vttablet_article_cell1_replica
       - EXTERNAL_DB=0
       - SLEEPTIME=30
@@ -344,7 +340,6 @@ services:
       - CELL=cell1
       - KEYSPACE=read_keyspace
       - SHARD=-80
-      - ROLE=primary
       - VTHOST=vttablet_read_cell1_primary
       - EXTERNAL_DB=0
       - SLEEPTIME=30
@@ -386,7 +381,6 @@ services:
       - CELL=cell1
       - KEYSPACE=read_keyspace
       - SHARD=-80
-      - ROLE=replica
       - VTHOST=vttablet_read_cell1_replica
       - EXTERNAL_DB=0
       - SLEEPTIME=30
@@ -429,7 +423,6 @@ services:
       - CELL=cell1
       - KEYSPACE=beread_keyspace
       - SHARD=-80
-      - ROLE=primary
       - VTHOST=vttablet_beread_cell1_primary
       - EXTERNAL_DB=0
       - SLEEPTIME=30
@@ -471,7 +464,6 @@ services:
       - CELL=cell1
       - KEYSPACE=beread_keyspace
       - SHARD=-80
-      - ROLE=replica
       - VTHOST=vttablet_beread_cell1_replica
       - EXTERNAL_DB=0
       - SLEEPTIME=30
@@ -514,7 +506,6 @@ services:
       - CELL=cell1
       - KEYSPACE=popularrank_keyspace
       - SHARD=-80
-      - ROLE=primary
       - VTHOST=vttablet_popularrank_cell1_primary
       - EXTERNAL_DB=0
       - SLEEPTIME=30
@@ -556,7 +547,6 @@ services:
       - CELL=cell1
       - KEYSPACE=popularrank_keyspace
       - SHARD=-80
-      - ROLE=replica
       - VTHOST=vttablet_popularrank_cell1_replica
       - EXTERNAL_DB=0
       - SLEEPTIME=30
@@ -603,7 +593,6 @@ services:
       - CELL=cell2
       - KEYSPACE=user_keyspace
       - SHARD=80-
-      - ROLE=primary
       - VTHOST=vttablet_user_cell2_primary
       - EXTERNAL_DB=0
       - SLEEPTIME=30
@@ -645,7 +634,6 @@ services:
       - CELL=cell2
       - KEYSPACE=user_keyspace
       - SHARD=80-
-      - ROLE=replica
       - VTHOST=vttablet_user_cell2_replica
       - EXTERNAL_DB=0
       - SLEEPTIME=30
@@ -689,7 +677,6 @@ services:
       - CELL=cell2
       - KEYSPACE=article_keyspace
       - SHARD=-80
-      - ROLE=replica
       - VTHOST=vttablet_article_cell2_science_primary
       - EXTERNAL_DB=0
       - SLEEPTIME=30
@@ -732,7 +719,6 @@ services:
       - CELL=cell2
       - KEYSPACE=article_keyspace
       - SHARD=80-
-      - ROLE=primary
       - VTHOST=vttablet_article_cell2_tech_primary
       - EXTERNAL_DB=0
       - SLEEPTIME=30
@@ -774,7 +760,6 @@ services:
       - CELL=cell2
       - KEYSPACE=article_keyspace
       - SHARD=80-
-      - ROLE=replica
       - VTHOST=vttablet_article_cell2_tech_replica
       - EXTERNAL_DB=0
       - SLEEPTIME=30
@@ -817,7 +802,6 @@ services:
       - CELL=cell2
       - KEYSPACE=read_keyspace
       - SHARD=80-
-      - ROLE=primary
       - VTHOST=vttablet_read_cell2_primary
       - EXTERNAL_DB=0
       - SLEEPTIME=30
@@ -859,7 +843,6 @@ services:
       - CELL=cell2
       - KEYSPACE=read_keyspace
       - SHARD=80-
-      - ROLE=replica
       - VTHOST=vttablet_read_cell2_replica
       - EXTERNAL_DB=0
       - SLEEPTIME=30
@@ -903,7 +886,6 @@ services:
       - CELL=cell2
       - KEYSPACE=beread_keyspace
       - SHARD=-80
-      - ROLE=replica
       - VTHOST=vttablet_beread_cell2_science_primary
       - EXTERNAL_DB=0
       - SLEEPTIME=30
@@ -946,7 +928,6 @@ services:
       - CELL=cell2
       - KEYSPACE=beread_keyspace
       - SHARD=80-
-      - ROLE=primary
       - VTHOST=vttablet_beread_cell2_tech_primary
       - EXTERNAL_DB=0
       - SLEEPTIME=30
@@ -988,7 +969,6 @@ services:
       - CELL=cell2
       - KEYSPACE=beread_keyspace
       - SHARD=80-
-      - ROLE=replica
       - VTHOST=vttablet_beread_cell2_tech_replica
       - EXTERNAL_DB=0
       - SLEEPTIME=30
@@ -1031,7 +1011,6 @@ services:
       - CELL=cell2
       - KEYSPACE=popularrank_keyspace
       - SHARD=80-c0
-      - ROLE=primary
       - VTHOST=vttablet_popularrank_cell2_weekly_primary
       - EXTERNAL_DB=0
       - SLEEPTIME=30
@@ -1073,7 +1052,6 @@ services:
       - CELL=cell2
       - KEYSPACE=popularrank_keyspace
       - SHARD=80-c0
-      - ROLE=replica
       - VTHOST=vttablet_popularrank_cell2_weekly_replica
       - EXTERNAL_DB=0
       - SLEEPTIME=30
@@ -1115,7 +1093,6 @@ services:
       - CELL=cell2
       - KEYSPACE=popularrank_keyspace
       - SHARD=c0-
-      - ROLE=primary
       - VTHOST=vttablet_popularrank_cell2_monthly_primary
       - EXTERNAL_DB=0
       - SLEEPTIME=30
@@ -1157,7 +1134,6 @@ services:
       - CELL=cell2
       - KEYSPACE=popularrank_keyspace
       - SHARD=c0-
-      - ROLE=replica
       - VTHOST=vttablet_popularrank_cell2_monthly_replica
       - EXTERNAL_DB=0
       - SLEEPTIME=30

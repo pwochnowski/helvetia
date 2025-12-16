@@ -11,7 +11,6 @@ keyspace=${KEYSPACE:-'user_keyspace'}
 shard=${SHARD:-'beijing'}
 grpc_port=${GRPC_PORT:-'15999'}
 web_port=${WEB_PORT:-'8080'}
-role=${ROLE:-'replica'}
 vthost=${VTHOST:-`hostname -i`}
 sleeptime=${SLEEPTIME:-'0'}
 uid=$1
@@ -25,14 +24,8 @@ tablet_hostname=''
 printf -v alias '%s-%010d' $CELL $uid
 printf -v tablet_dir 'vt_%010d' $uid
 
-tablet_role=$role
+# All tablets start as replica type - VTOrc will promote one to primary
 tablet_type='replica'
-
-# Only make replicas rdonly (not primary candidates)
-# Keep all "primary" role tablets as replica type so they can be promoted
-if [[ "$role" == "replica" ]] && (( $uid % 10 % 3 == 0 )) ; then
-    tablet_type='rdonly'
-fi
 
 # Copy config directory
 cp -R /script/config $VTROOT
@@ -51,7 +44,6 @@ export SHARD=$shard
 export TABLET_ID=$alias
 export TABLET_DIR=$tablet_dir
 export MYSQL_PORT=3306
-export TABLET_ROLE=$tablet_role
 export DB_PORT=${DB_PORT:-3306}
 export DB_HOST=${DB_HOST:-""}
 export DB_NAME=$db_name
@@ -61,7 +53,7 @@ echo "Removing $VTDATAROOT/$tablet_dir/{mysql.sock,mysql.sock.lock}..."
 rm -rf $VTDATAROOT/$tablet_dir/{mysql.sock,mysql.sock.lock}
 
 # Create mysql instances
-echo "Initing mysql for tablet: $uid role: $role cell: $CELL keyspace: $keyspace shard: $shard"
+echo "Initing mysql for tablet: $uid cell: $CELL keyspace: $keyspace shard: $shard"
 $VTROOT/bin/mysqlctld \
   --init-db-sql-file=$init_db_sql_file \
   --logtostderr=true \
