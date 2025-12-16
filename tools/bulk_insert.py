@@ -114,7 +114,7 @@ def gen_user(i: int, base_time: datetime) -> Dict[str, Any]:
     }
 
 
-def gen_article(i: int, base_time: datetime) -> Dict[str, Any]:
+def gen_article(i: int, base_time: datetime, articles_count: int = ARTICLES_NUM) -> Dict[str, Any]:
     """Generate a single article record matching the schema."""
     category = random.choices(CATEGORIES, CATEGORY_WEIGHTS)[0]
     language = random.choices(LANGUAGES, LANGUAGE_WEIGHTS_ARTICLE)[0]
@@ -127,11 +127,16 @@ def gen_article(i: int, base_time: datetime) -> Dict[str, Any]:
     abstract = f"Abstract for article {i}: A comprehensive overview of the topic."
     text = f"Full text content for article {i}. " * 50  # ~300 words placeholder
     
+    # Spread articles over 1 year (365 days)
+    days_spread = 365
+    day_offset = int((i / articles_count) * days_spread)
+    article_time = base_time + timedelta(days=day_offset, hours=random.randint(0, 23), minutes=random.randint(0, 59))
+    
     return {
         "id": i + 1,  # Explicit ID for Vitess category vindex
         "aid": aid,
         "category": category,
-        "timestamp": base_time + timedelta(seconds=i),
+        "timestamp": article_time,
         "title": f"Article Title {i}: {random_string(20)}",
         "abstract": abstract,
         "articleTags": json.dumps(random_tags(random.randint(1, 5))),
@@ -143,7 +148,7 @@ def gen_article(i: int, base_time: datetime) -> Dict[str, Any]:
     }
 
 
-def gen_read(i: int, base_time: datetime, users_count: int, articles_count: int, read_id: int) -> Dict[str, Any] | None:
+def gen_read(i: int, base_time: datetime, users_count: int, articles_count: int, read_id: int, reads_count: int = READS_NUM) -> Dict[str, Any] | None:
     """Generate a single read record matching the schema."""
     uid = f"u{random.randint(0, users_count - 1)}"
     aid = f"a{random.randint(0, articles_count - 1)}"
@@ -157,11 +162,16 @@ def gen_read(i: int, base_time: datetime, users_count: int, articles_count: int,
     if random.random() > probs["read"]:
         return None  # Skip this read
     
+    # Spread reads over 1 year (365 days)
+    days_spread = 365
+    day_offset = int((i / reads_count) * days_spread)
+    read_time = base_time + timedelta(days=day_offset, hours=random.randint(0, 23), minutes=random.randint(0, 59), seconds=random.randint(0, 59))
+    
     return {
         "id": read_id,  # Explicit ID for Vitess region vindex
         "uid": uid,
         "aid": aid,
-        "timestamp": base_time + timedelta(seconds=i * 10),
+        "timestamp": read_time,
         "region": region,
         "readTimeLength": random.randint(1, 300),  # 1-300 seconds
         "agreeOrNot": 1 if random.random() < probs["agree"] else 0,
@@ -361,14 +371,14 @@ def main():
         
         # Generate articles  
         print("\nGenerating articles...")
-        for i, batch in enumerate(batch_generator(gen_article, args.articles, ARTICLE_BATCH_SIZE, base_time=base_time)):
+        for i, batch in enumerate(batch_generator(gen_article, args.articles, ARTICLE_BATCH_SIZE, base_time=base_time, articles_count=args.articles)):
             print_progress((i + 1) * ARTICLE_BATCH_SIZE, args.articles, "Articles")
         print()
         
         # Generate reads
         print("\nGenerating reads...")
         for i, batch in enumerate(batch_generator(gen_read, args.reads, READ_BATCH_SIZE, 
-                                                   base_time=base_time, users_count=args.users, articles_count=args.articles)):
+                                                   base_time=base_time, users_count=args.users, articles_count=args.articles, reads_count=args.reads)):
             print_progress((i + 1) * READ_BATCH_SIZE, args.reads, "Reads")
         print()
         
@@ -463,7 +473,7 @@ def main():
             truncate_table(article_conn, article_cursor, "article")
         
         print("  Inserting articles...")
-        for batch in batch_generator(gen_article, args.articles, ARTICLE_BATCH_SIZE, base_time=base_time):
+        for batch in batch_generator(gen_article, args.articles, ARTICLE_BATCH_SIZE, base_time=base_time, articles_count=args.articles):
             article_count += bulk_insert_articles(article_cursor, batch)
             article_conn.commit()
             print_progress(article_count, args.articles, "Articles")
@@ -477,7 +487,7 @@ def main():
         # Now insert reads (users and articles are populated)
         print("  Inserting reads...")
         for batch in batch_generator(gen_read, args.reads, READ_BATCH_SIZE,
-                                     base_time=base_time, users_count=args.users, articles_count=args.articles):
+                                     base_time=base_time, users_count=args.users, articles_count=args.articles, reads_count=args.reads):
             read_count += bulk_insert_reads(read_cursor, batch)
             read_conn.commit()
             print_progress(read_count, args.reads, "Reads")
