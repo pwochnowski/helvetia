@@ -9,6 +9,8 @@ import helvetia.Article;
 import helvetia.ArticleList;
 import helvetia.Read;
 import helvetia.ReadList;
+import helvetia.BeRead;
+import helvetia.BeReadList;
 
 import static spark.Spark.*;
 
@@ -222,10 +224,77 @@ public class Server {
         });
     }
 
+    void addBeReadEndpoints() {
+        BeReadDao dao = new BeReadDaoImpl(db);
+
+        post("/bereads", (req, res) -> {
+            BeRead input = BeRead.parseFrom(req.bodyAsBytes());
+            dao.create(input);
+
+            return "";
+        });
+
+        get("/bereads/:id", (req, res) -> {
+            long id = Long.parseLong(req.params(":id"));
+            BeRead b = dao.get(id);
+            if (b == null) halt(404);
+
+            res.type("application/x-protobuf");
+            return b.toByteArray();
+        });
+
+        put("/bereads/:id", (req, res) -> {
+            BeRead input = BeRead.parseFrom(req.bodyAsBytes());
+            dao.update(input);
+            return "";
+        });
+
+        delete("/bereads/:id", (req, res) -> {
+            long id = Long.parseLong(req.params(":id"));
+            boolean ok = dao.delete(id);
+
+            res.status(ok ? 200 : 404);
+            return "";
+        });
+
+        get("/bereads", (req, res) -> {
+            String filter = req.queryParams("filter");
+            
+            // Pagination parameters
+            int limit = 100;
+            String limitParam = req.queryParams("limit");
+            if (limitParam != null) {
+                limit = Math.min(Integer.parseInt(limitParam), 10000);
+            }
+            
+            int offset = 0;
+            String offsetParam = req.queryParams("offset");
+            if (offsetParam != null) {
+                offset = Integer.parseInt(offsetParam);
+            }
+            
+            // Sorting parameters
+            String sortBy = req.queryParams("sortBy");
+            String sortDir = req.queryParams("sortDir");
+            
+            // Get total count and list
+            final long totalCount = dao.count(filter);
+            final var list = dao.list(filter, limit, offset, sortBy, sortDir);
+
+            final var out = BeReadList.newBuilder()
+                .addAllBereads(list)
+                .setTotalCount(totalCount)
+                .build();
+            res.type("application/x-protobuf");
+            return out.toByteArray();
+        });
+    }
+
     public void run() {
         addUserEndpoints();
         addArticleEndpoints();
         addReadEndpoints();
+        addBeReadEndpoints();
     }
 
     public static void main(String[] args) {

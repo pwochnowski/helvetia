@@ -19,3 +19,8 @@ message BeRead {
   int32 shareNum = 11;
   repeated string shareUidList = 12;
 }
+
+message BeReadList {
+  repeated BeRead bereads = 1;
+  int64 totalCount = 2;
+}

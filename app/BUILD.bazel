@@ -20,6 +20,7 @@ java_binary(
         "//proto:user_proto_java",
         "//proto:article_proto_java",
         "//proto:read_proto_java",
+        "//proto:be_read_proto_java",
         "@maven//:com_sparkjava_spark_core",
         "@maven//:com_zaxxer_HikariCP",
         "@maven//:org_apache_logging_log4j_log4j_api",

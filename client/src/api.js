@@ -6,6 +6,7 @@
 import { tableConfig as userConfig, decodeUser, encodeUser } from './tables/user.js';
 import { tableConfig as articleConfig, decodeArticle, encodeArticle } from './tables/article.js';
 import { tableConfig as readConfig, decodeRead, encodeRead } from './tables/read.js';
+import { tableConfig as bereadConfig, decodeBeRead, encodeBeRead } from './tables/beread.js';
 
 // Server configuration for multi-region setup
 // In development: Vite proxies /api/cell1/* and /api/cell2/* to respective servers
@@ -373,6 +374,82 @@ export async function deleteRead(id) {
     }
 }
 
+// ==================== BeRead API ====================
+
+/**
+ * Fetch bereads with pagination and sorting
+ * @returns {{ items: array, totalCount: number }}
+ */
+export async function fetchBeReads(rsqlFilter = null, limit = 100, offset = 0, sortBy = null, sortDir = null) {
+    const params = new URLSearchParams();
+    if (rsqlFilter) params.set('filter', rsqlFilter);
+    params.set('limit', limit.toString());
+    params.set('offset', offset.toString());
+    if (sortBy) params.set('sortBy', sortBy);
+    if (sortDir) params.set('sortDir', sortDir);
+    
+    let url = `${getApiBase()}/bereads`;
+    const queryString = params.toString();
+    if (queryString) url += `?${queryString}`;
+    
+    const response = await fetch(url, {
+        headers: {
+            'Accept': 'application/x-protobuf',
+        },
+    });
+    
+    if (!response.ok) {
+        throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+    }
+    
+    const buffer = await response.arrayBuffer();
+    const uint8 = new Uint8Array(buffer);
+    
+    return decodeListWithCount(uint8, decodeBeRead);
+}
+
+export async function updateBeRead(beread) {
+    const body = encodeBeRead(beread, encodeVarintField, encodeString);
+    
+    const response = await fetch(`${getApiBase()}/bereads/${beread.id}`, {
+        method: 'PUT',
+        headers: {
+            'Content-Type': 'application/x-protobuf',
+        },
+        body,
+    });
+    
+    if (!response.ok) {
+        throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+    }
+}
+
+export async function createBeRead(beread) {
+    const body = encodeBeRead(beread, encodeVarintField, encodeString);
+    
+    const response = await fetch(`${getApiBase()}/bereads`, {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/x-protobuf',
+        },
+        body,
+    });
+    
+    if (!response.ok) {
+        throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+    }
+}
+
+export async function deleteBeRead(id) {
+    const response = await fetch(`${getApiBase()}/bereads/${id}`, {
+        method: 'DELETE',
+    });
+    
+    if (!response.ok) {
+        throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+    }
+}
+
 // ==================== Generic API Functions ====================
 
 // Map of table configs for easy lookup
@@ -380,6 +457,7 @@ export const tableConfigs = {
     users: userConfig,
     articles: articleConfig,
     reads: readConfig,
+    bereads: bereadConfig,
 };
 
 /**
@@ -391,6 +469,7 @@ export async function fetchData(tableName, rsqlFilter = null, limit = 100, offse
         case 'users': return fetchUsers(rsqlFilter, limit, offset, sortBy, sortDir);
         case 'articles': return fetchArticles(rsqlFilter, limit, offset, sortBy, sortDir);
         case 'reads': return fetchReads(rsqlFilter, limit, offset, sortBy, sortDir);
+        case 'bereads': return fetchBeReads(rsqlFilter, limit, offset, sortBy, sortDir);
         default: throw new Error(`Unknown table: ${tableName}`);
     }
 }
@@ -401,6 +480,7 @@ export async function updateData(tableName, data) {
         case 'users': return updateUser(data);
         case 'articles': return updateArticle(data);
         case 'reads': return updateRead(data);
+        case 'bereads': return updateBeRead(data);
         default: throw new Error(`Unknown table: ${tableName}`);
     }
 }
