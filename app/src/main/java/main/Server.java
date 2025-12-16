@@ -73,9 +73,13 @@ public class Server {
                 offset = Integer.parseInt(offsetParam);
             }
             
-            // Get total count and list in parallel (same filter)
+            // Sorting parameters
+            String sortBy = req.queryParams("sortBy");
+            String sortDir = req.queryParams("sortDir");
+            
+            // Get total count and list
             final long totalCount = dao.count(filter);
-            final var list = dao.list(filter, limit, offset);
+            final var list = dao.list(filter, limit, offset, sortBy, sortDir);
 
             final var out = UserList.newBuilder()
                 .addAllUsers(list)
@@ -135,9 +139,13 @@ public class Server {
                 offset = Integer.parseInt(offsetParam);
             }
             
+            // Sorting parameters
+            String sortBy = req.queryParams("sortBy");
+            String sortDir = req.queryParams("sortDir");
+            
             // Get total count and list
             final long totalCount = dao.count(filter);
-            final var list = dao.list(filter, limit, offset);
+            final var list = dao.list(filter, limit, offset, sortBy, sortDir);
 
             final var out = ArticleList.newBuilder()
                 .addAllArticles(list)
@@ -197,9 +205,13 @@ public class Server {
                 offset = Integer.parseInt(offsetParam);
             }
             
+            // Sorting parameters
+            String sortBy = req.queryParams("sortBy");
+            String sortDir = req.queryParams("sortDir");
+            
             // Get total count and list
             final long totalCount = dao.count(filter);
-            final var list = dao.list(filter, limit, offset);
+            final var list = dao.list(filter, limit, offset, sortBy, sortDir);
 
             final var out = ReadList.newBuilder()
                 .addAllReads(list)

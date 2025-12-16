@@ -11,12 +11,14 @@ ModuleRegistry.registerModules([AllCommunityModule]);
 let currentTable = 'users';
 let gridApi = null;
 
-// Server-side pagination state
+// Server-side pagination and sorting state
 const PAGE_SIZE = 100;
 let currentPage = 0;
 let totalCount = 0;
 let isLoading = false;
 let currentFilter = null;
+let currentSortBy = null;
+let currentSortDir = null;
 
 // Get current table config
 function getTableConfig() {
@@ -111,14 +113,19 @@ async function loadPage(page = 0) {
         const filterModel = gridApi?.getFilterModel() || {};
         currentFilter = filterModelToRsql(filterModel);
         
-        // Debug: show the RSQL in console
-        if (currentFilter) {
+        // Get current sort state from grid
+        const sortModel = gridApi?.getColumnState()?.find(col => col.sort);
+        currentSortBy = sortModel?.colId || null;
+        currentSortDir = sortModel?.sort || null;
+        
+        // Debug: show the RSQL and sort in console
+        if (currentFilter || currentSortBy) {
             console.log('RSQL Filter:', currentFilter);
-            console.log('Human readable:', parseRsqlForDisplay(currentFilter));
+            console.log('Sort:', currentSortBy, currentSortDir);
         }
         
         const offset = page * PAGE_SIZE;
-        const result = await fetchData(currentTable, currentFilter, PAGE_SIZE, offset);
+        const result = await fetchData(currentTable, currentFilter, PAGE_SIZE, offset, currentSortBy, currentSortDir);
         
         // Update total count from server
         totalCount = result.totalCount;
@@ -129,7 +136,8 @@ async function loadPage(page = 0) {
         updatePaginationControls();
         
         const filterMsg = currentFilter ? ` (filtered)` : '';
-        showStatus(`Loaded page ${page + 1} of ${config.name}${filterMsg}`, 'success');
+        const sortMsg = currentSortBy ? ` (sorted by ${currentSortBy})` : '';
+        showStatus(`Loaded page ${page + 1} of ${config.name}${filterMsg}${sortMsg}`, 'success');
     } catch (error) {
         console.error(`Failed to load ${config.name}:`, error);
         showStatus(`Error: ${error.message}`, 'error');
@@ -164,6 +172,12 @@ const onFilterChanged = debounce(() => {
     console.log('Filter changed, reloading from server...');
     loadPage(0);  // Reset to first page when filter changes
 }, 300);  // 300ms debounce to avoid too many requests while typing
+
+// Handle sort changes - reload data from server with new sort
+const onSortChanged = () => {
+    console.log('Sort changed, reloading from server...');
+    loadPage(0);  // Reset to first page when sort changes
+};
 
 // Handle cell value changes
 async function onCellValueChanged(event) {
@@ -215,9 +229,11 @@ function switchTable(tableName) {
     // Update grid columns
     gridApi.setGridOption('columnDefs', config.columnDefs);
     
-    // Reset and reload data
+    // Reset pagination and sort state
     currentPage = 0;
     totalCount = 0;
+    currentSortBy = null;
+    currentSortDir = null;
     gridApi.setGridOption('rowData', []);
     loadPage(0);
 }
@@ -246,6 +262,7 @@ function createGridOptions() {
         // Events
         onCellValueChanged,
         onFilterChanged,
+        onSortChanged,
         onGridReady: (params) => {
             gridApi = params.api;
             loadPage(0);

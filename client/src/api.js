@@ -118,14 +118,16 @@ function decodeListWithCount(buffer, decodeItem) {
 // ==================== User API ====================
 
 /**
- * Fetch users with pagination
+ * Fetch users with pagination and sorting
  * @returns {{ items: array, totalCount: number }}
  */
-export async function fetchUsers(rsqlFilter = null, limit = 100, offset = 0) {
+export async function fetchUsers(rsqlFilter = null, limit = 100, offset = 0, sortBy = null, sortDir = null) {
     const params = new URLSearchParams();
     if (rsqlFilter) params.set('filter', rsqlFilter);
     params.set('limit', limit.toString());
     params.set('offset', offset.toString());
+    if (sortBy) params.set('sortBy', sortBy);
+    if (sortDir) params.set('sortDir', sortDir);
     
     let url = `${API_BASE}/users`;
     const queryString = params.toString();
@@ -192,14 +194,16 @@ export async function deleteUser(id) {
 // ==================== Article API ====================
 
 /**
- * Fetch articles with pagination
+ * Fetch articles with pagination and sorting
  * @returns {{ items: array, totalCount: number }}
  */
-export async function fetchArticles(rsqlFilter = null, limit = 100, offset = 0) {
+export async function fetchArticles(rsqlFilter = null, limit = 100, offset = 0, sortBy = null, sortDir = null) {
     const params = new URLSearchParams();
     if (rsqlFilter) params.set('filter', rsqlFilter);
     params.set('limit', limit.toString());
     params.set('offset', offset.toString());
+    if (sortBy) params.set('sortBy', sortBy);
+    if (sortDir) params.set('sortDir', sortDir);
     
     let url = `${API_BASE}/articles`;
     const queryString = params.toString();
@@ -266,14 +270,16 @@ export async function deleteArticle(id) {
 // ==================== Read API ====================
 
 /**
- * Fetch reads with pagination
+ * Fetch reads with pagination and sorting
  * @returns {{ items: array, totalCount: number }}
  */
-export async function fetchReads(rsqlFilter = null, limit = 100, offset = 0) {
+export async function fetchReads(rsqlFilter = null, limit = 100, offset = 0, sortBy = null, sortDir = null) {
     const params = new URLSearchParams();
     if (rsqlFilter) params.set('filter', rsqlFilter);
     params.set('limit', limit.toString());
     params.set('offset', offset.toString());
+    if (sortBy) params.set('sortBy', sortBy);
+    if (sortDir) params.set('sortDir', sortDir);
     
     let url = `${API_BASE}/reads`;
     const queryString = params.toString();
@@ -347,14 +353,14 @@ export const tableConfigs = {
 };
 
 /**
- * Generic fetch function with pagination
+ * Generic fetch function with pagination and sorting
  * @returns {{ items: array, totalCount: number }}
  */
-export async function fetchData(tableName, rsqlFilter = null, limit = 100, offset = 0) {
+export async function fetchData(tableName, rsqlFilter = null, limit = 100, offset = 0, sortBy = null, sortDir = null) {
     switch (tableName) {
-        case 'users': return fetchUsers(rsqlFilter, limit, offset);
-        case 'articles': return fetchArticles(rsqlFilter, limit, offset);
-        case 'reads': return fetchReads(rsqlFilter, limit, offset);
+        case 'users': return fetchUsers(rsqlFilter, limit, offset, sortBy, sortDir);
+        case 'articles': return fetchArticles(rsqlFilter, limit, offset, sortBy, sortDir);
+        case 'reads': return fetchReads(rsqlFilter, limit, offset, sortBy, sortDir);
         default: throw new Error(`Unknown table: ${tableName}`);
     }
 }

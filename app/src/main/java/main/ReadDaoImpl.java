@@ -132,18 +132,21 @@ public class ReadDaoImpl implements ReadDao {
     
     @Override
     public List<Read> list(String rsqlFilter) throws Exception {
-        return list(rsqlFilter, 10000, 0);
+        return list(rsqlFilter, 10000, 0, null, null);
     }
     
     @Override
-    public List<Read> list(String rsqlFilter, int limit, int offset) throws Exception {
+    public List<Read> list(String rsqlFilter, int limit, int offset, String sortBy, String sortDir) throws Exception {
         String baseSql = "SELECT id, timestamp, uid, aid, region, readTimeLength, agreeOrNot, commentOrNot, commentDetail, shareOrNot FROM read_keyspace.read";
         
         // Convert RSQL to SQL WHERE clause
         RsqlToSql.SqlResult filterResult = rsqlConverter.convert(rsqlFilter);
         
+        // Validate and build ORDER BY clause
+        String orderBy = buildOrderByClause(sortBy, sortDir);
+        
         // Build final query with offset-based pagination
-        String sql = baseSql + " WHERE " + filterResult.whereClause + " ORDER BY id LIMIT ? OFFSET ?";
+        String sql = baseSql + " WHERE " + filterResult.whereClause + orderBy + " LIMIT ? OFFSET ?";
 
         try (Connection conn = db.getConnection();
              PreparedStatement st = conn.prepareStatement(sql)) {
@@ -211,5 +214,28 @@ public class ReadDaoImpl implements ReadDao {
             }
             return 0;
         }
+    }
+    
+    /**
+     * Build a safe ORDER BY clause, validating the column name against allowed columns
+     */
+    private String buildOrderByClause(String sortBy, String sortDir) {
+        // Default to sorting by id if no sort specified
+        if (sortBy == null || sortBy.isEmpty()) {
+            return " ORDER BY id";
+        }
+        
+        // Validate column name against allowed columns to prevent SQL injection
+        if (!rsqlConverter.getAllowedColumns().contains(sortBy)) {
+            return " ORDER BY id";
+        }
+        
+        // Validate sort direction
+        String direction = "ASC";
+        if (sortDir != null && sortDir.equalsIgnoreCase("desc")) {
+            direction = "DESC";
+        }
+        
+        return " ORDER BY " + sortBy + " " + direction;
     }
 }

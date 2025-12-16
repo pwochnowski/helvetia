@@ -57,6 +57,13 @@ public class RsqlToSql {
     }
     
     /**
+     * Get the set of allowed column names
+     */
+    public Set<String> getAllowedColumns() {
+        return allowedColumns;
+    }
+    
+    /**
      * Result of converting RSQL to SQL
      */
     public static class SqlResult {
