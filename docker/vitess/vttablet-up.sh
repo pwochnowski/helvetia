@@ -13,7 +13,7 @@ grpc_port=${GRPC_PORT:-'15999'}
 web_port=${WEB_PORT:-'8080'}
 vthost=${VTHOST:-`hostname -i`}
 sleeptime=${SLEEPTIME:-'0'}
-uid=$1
+uid=${TABLET_UID:?'TABLET_UID is required'}
 external=${EXTERNAL_DB:-0}
 
 # If DB is not explicitly set, we default to behaviour of prefixing with vt_

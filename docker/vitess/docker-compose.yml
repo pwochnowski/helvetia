@@ -11,6 +11,42 @@
 #   vtgate_cell2 (port 15307): Primary affinity to cell2, serves HongKong region apps
 #   Each VTGate can still route cross-cell for writes to PRIMARY tablets
 
+# ===========================================
+# YAML Anchors for tablet definitions
+# ===========================================
+x-vttablet-base: &vttablet-base
+  platform: linux/amd64
+  command:
+    - sh
+    - -c
+    - /script/vttablet-up.sh
+  depends_on:
+    - vtctld
+  healthcheck:
+    interval: 30s
+    retries: 15
+    test:
+      - CMD-SHELL
+      - curl -s --fail --show-error localhost:8080/debug/health
+    timeout: 10s
+  image: vitess/lite:v23.0.0
+  volumes:
+    - .:/script
+  networks:
+    - vitess_net
+
+x-vttablet-env-base: &vttablet-env-base
+  TOPOLOGY_FLAGS: --topo-implementation consul --topo-global-server-address consul1:8500 --topo-global-root vitess/global
+  WEB_PORT: 8080
+  GRPC_PORT: 15999
+  EXTERNAL_DB: 0
+  SLEEPTIME: 30
+  DB_PORT: ""
+  DB_HOST: ""
+  DB_USER: ""
+  DB_PASS: ""
+  DB_CHARSET: ""
+
 services:
   # ===========================================
   # TOPOLOGY SERVICE (Consul Cluster)
@@ -158,419 +194,149 @@ services:
   # --- USER KEYSPACE (region=Beijing) - Cell1 ---
   # Shard: beijing (region-based sharding)
   vttablet_user_cell1_primary:
-    platform: linux/amd64
-    command:
-      - sh
-      - -c
-      - /script/vttablet-up.sh 101
-    depends_on:
-      - vtctld
+    <<: *vttablet-base
     environment:
-      - TOPOLOGY_FLAGS=--topo-implementation consul --topo-global-server-address consul1:8500
-        --topo-global-root vitess/global
-      - WEB_PORT=8080
-      - GRPC_PORT=15999
-      - CELL=cell1
-      - KEYSPACE=user_keyspace
-      - SHARD=-80
-      - VTHOST=vttablet_user_cell1_primary
-      - EXTERNAL_DB=0
-      - SLEEPTIME=30
-      - DB_PORT=
-      - DB_HOST=
-      - DB_USER=
-      - DB_PASS=
-      - DB_CHARSET=
-    healthcheck:
-      interval: 30s
-      retries: 15
-      test:
-        - CMD-SHELL
-        - curl -s --fail --show-error localhost:8080/debug/health
-      timeout: 10s
-    image: vitess/lite:v23.0.0
+      <<: *vttablet-env-base
+      TABLET_UID: 101
+      CELL: cell1
+      KEYSPACE: user_keyspace
+      SHARD: "-80"
+      VTHOST: vttablet_user_cell1_primary
     ports:
       - 15101:8080
       - "15999"
       - "3306"
-    volumes:
-      - .:/script
-    networks:
-      - vitess_net
 
   vttablet_user_cell1_replica:
-    platform: linux/amd64
-    command:
-      - sh
-      - -c
-      - /script/vttablet-up.sh 102
-    depends_on:
-      - vtctld
+    <<: *vttablet-base
     environment:
-      - TOPOLOGY_FLAGS=--topo-implementation consul --topo-global-server-address consul1:8500
-        --topo-global-root vitess/global
-      - WEB_PORT=8080
-      - GRPC_PORT=15999
-      - CELL=cell1
-      - KEYSPACE=user_keyspace
-      - SHARD=-80
-      - VTHOST=vttablet_user_cell1_replica
-      - EXTERNAL_DB=0
-      - SLEEPTIME=30
-      - DB_PORT=
-      - DB_HOST=
-      - DB_USER=
-      - DB_PASS=
-      - DB_CHARSET=
-    healthcheck:
-      interval: 30s
-      retries: 15
-      test:
-        - CMD-SHELL
-        - curl -s --fail --show-error localhost:8080/debug/health
-      timeout: 10s
-    image: vitess/lite:v23.0.0
+      <<: *vttablet-env-base
+      TABLET_UID: 102
+      CELL: cell1
+      KEYSPACE: user_keyspace
+      SHARD: "-80"
+      VTHOST: vttablet_user_cell1_replica
     ports:
       - 15102:8080
       - "15999"
       - "3306"
-    volumes:
-      - .:/script
-    networks:
-      - vitess_net
 
   # --- ARTICLE KEYSPACE (category=science) - Cell1 ---
   # This is the PRIMARY for science category, Cell2 will receive via VReplication
   vttablet_article_cell1_primary:
-    platform: linux/amd64
-    command:
-      - sh
-      - -c
-      - /script/vttablet-up.sh 201
-    depends_on:
-      - vtctld
+    <<: *vttablet-base
     environment:
-      - TOPOLOGY_FLAGS=--topo-implementation consul --topo-global-server-address consul1:8500
-        --topo-global-root vitess/global
-      - WEB_PORT=8080
-      - GRPC_PORT=15999
-      - CELL=cell1
-      - KEYSPACE=article_keyspace
-      - SHARD=-80
-      - VTHOST=vttablet_article_cell1_primary
-      - EXTERNAL_DB=0
-      - SLEEPTIME=30
-      - DB_PORT=
-      - DB_HOST=
-      - DB_USER=
-      - DB_PASS=
-      - DB_CHARSET=
-    healthcheck:
-      interval: 30s
-      retries: 15
-      test:
-        - CMD-SHELL
-        - curl -s --fail --show-error localhost:8080/debug/health
-      timeout: 10s
-    image: vitess/lite:v23.0.0
+      <<: *vttablet-env-base
+      TABLET_UID: 201
+      CELL: cell1
+      KEYSPACE: article_keyspace
+      SHARD: "-80"
+      VTHOST: vttablet_article_cell1_primary
     ports:
       - 15201:8080
       - "15999"
       - "3306"
-    volumes:
-      - .:/script
-    networks:
-      - vitess_net
 
   vttablet_article_cell1_replica:
-    platform: linux/amd64
-    command:
-      - sh
-      - -c
-      - /script/vttablet-up.sh 202
-    depends_on:
-      - vtctld
+    <<: *vttablet-base
     environment:
-      - TOPOLOGY_FLAGS=--topo-implementation consul --topo-global-server-address consul1:8500
-        --topo-global-root vitess/global
-      - WEB_PORT=8080
-      - GRPC_PORT=15999
-      - CELL=cell1
-      - KEYSPACE=article_keyspace
-      - SHARD=-80
-      - VTHOST=vttablet_article_cell1_replica
-      - EXTERNAL_DB=0
-      - SLEEPTIME=30
-      - DB_PORT=
-      - DB_HOST=
-      - DB_USER=
-      - DB_PASS=
-      - DB_CHARSET=
-    healthcheck:
-      interval: 30s
-      retries: 15
-      test:
-        - CMD-SHELL
-        - curl -s --fail --show-error localhost:8080/debug/health
-      timeout: 10s
-    image: vitess/lite:v23.0.0
+      <<: *vttablet-env-base
+      TABLET_UID: 202
+      CELL: cell1
+      KEYSPACE: article_keyspace
+      SHARD: "-80"
+      VTHOST: vttablet_article_cell1_replica
     ports:
       - 15202:8080
       - "15999"
       - "3306"
-    volumes:
-      - .:/script
-    networks:
-      - vitess_net
 
   # --- READ KEYSPACE (follows User, region=Beijing) - Cell1 ---
   vttablet_read_cell1_primary:
-    platform: linux/amd64
-    command:
-      - sh
-      - -c
-      - /script/vttablet-up.sh 301
-    depends_on:
-      - vtctld
+    <<: *vttablet-base
     environment:
-      - TOPOLOGY_FLAGS=--topo-implementation consul --topo-global-server-address consul1:8500
-        --topo-global-root vitess/global
-      - WEB_PORT=8080
-      - GRPC_PORT=15999
-      - CELL=cell1
-      - KEYSPACE=read_keyspace
-      - SHARD=-80
-      - VTHOST=vttablet_read_cell1_primary
-      - EXTERNAL_DB=0
-      - SLEEPTIME=30
-      - DB_PORT=
-      - DB_HOST=
-      - DB_USER=
-      - DB_PASS=
-      - DB_CHARSET=
-    healthcheck:
-      interval: 30s
-      retries: 15
-      test:
-        - CMD-SHELL
-        - curl -s --fail --show-error localhost:8080/debug/health
-      timeout: 10s
-    image: vitess/lite:v23.0.0
+      <<: *vttablet-env-base
+      TABLET_UID: 301
+      CELL: cell1
+      KEYSPACE: read_keyspace
+      SHARD: "-80"
+      VTHOST: vttablet_read_cell1_primary
     ports:
       - 15301:8080
       - "15999"
       - "3306"
-    volumes:
-      - .:/script
-    networks:
-      - vitess_net
 
   vttablet_read_cell1_replica:
-    platform: linux/amd64
-    command:
-      - sh
-      - -c
-      - /script/vttablet-up.sh 302
-    depends_on:
-      - vtctld
+    <<: *vttablet-base
     environment:
-      - TOPOLOGY_FLAGS=--topo-implementation consul --topo-global-server-address consul1:8500
-        --topo-global-root vitess/global
-      - WEB_PORT=8080
-      - GRPC_PORT=15999
-      - CELL=cell1
-      - KEYSPACE=read_keyspace
-      - SHARD=-80
-      - VTHOST=vttablet_read_cell1_replica
-      - EXTERNAL_DB=0
-      - SLEEPTIME=30
-      - DB_PORT=
-      - DB_HOST=
-      - DB_USER=
-      - DB_PASS=
-      - DB_CHARSET=
-    healthcheck:
-      interval: 30s
-      retries: 15
-      test:
-        - CMD-SHELL
-        - curl -s --fail --show-error localhost:8080/debug/health
-      timeout: 10s
-    image: vitess/lite:v23.0.0
+      <<: *vttablet-env-base
+      TABLET_UID: 302
+      CELL: cell1
+      KEYSPACE: read_keyspace
+      SHARD: "-80"
+      VTHOST: vttablet_read_cell1_replica
     ports:
       - 15302:8080
       - "15999"
       - "3306"
-    volumes:
-      - .:/script
-    networks:
-      - vitess_net
 
   # --- BE-READ KEYSPACE (category=science) - Cell1 ---
   vttablet_beread_cell1_primary:
-    platform: linux/amd64
-    command:
-      - sh
-      - -c
-      - /script/vttablet-up.sh 401
-    depends_on:
-      - vtctld
+    <<: *vttablet-base
     environment:
-      - TOPOLOGY_FLAGS=--topo-implementation consul --topo-global-server-address consul1:8500
-        --topo-global-root vitess/global
-      - WEB_PORT=8080
-      - GRPC_PORT=15999
-      - CELL=cell1
-      - KEYSPACE=beread_keyspace
-      - SHARD=-80
-      - VTHOST=vttablet_beread_cell1_primary
-      - EXTERNAL_DB=0
-      - SLEEPTIME=30
-      - DB_PORT=
-      - DB_HOST=
-      - DB_USER=
-      - DB_PASS=
-      - DB_CHARSET=
-    healthcheck:
-      interval: 30s
-      retries: 15
-      test:
-        - CMD-SHELL
-        - curl -s --fail --show-error localhost:8080/debug/health
-      timeout: 10s
-    image: vitess/lite:v23.0.0
+      <<: *vttablet-env-base
+      TABLET_UID: 401
+      CELL: cell1
+      KEYSPACE: beread_keyspace
+      SHARD: "-80"
+      VTHOST: vttablet_beread_cell1_primary
     ports:
       - 15401:8080
       - "15999"
       - "3306"
-    volumes:
-      - .:/script
-    networks:
-      - vitess_net
 
   vttablet_beread_cell1_replica:
-    platform: linux/amd64
-    command:
-      - sh
-      - -c
-      - /script/vttablet-up.sh 402
-    depends_on:
-      - vtctld
+    <<: *vttablet-base
     environment:
-      - TOPOLOGY_FLAGS=--topo-implementation consul --topo-global-server-address consul1:8500
-        --topo-global-root vitess/global
-      - WEB_PORT=8080
-      - GRPC_PORT=15999
-      - CELL=cell1
-      - KEYSPACE=beread_keyspace
-      - SHARD=-80
-      - VTHOST=vttablet_beread_cell1_replica
-      - EXTERNAL_DB=0
-      - SLEEPTIME=30
-      - DB_PORT=
-      - DB_HOST=
-      - DB_USER=
-      - DB_PASS=
-      - DB_CHARSET=
-    healthcheck:
-      interval: 30s
-      retries: 15
-      test:
-        - CMD-SHELL
-        - curl -s --fail --show-error localhost:8080/debug/health
-      timeout: 10s
-    image: vitess/lite:v23.0.0
+      <<: *vttablet-env-base
+      TABLET_UID: 402
+      CELL: cell1
+      KEYSPACE: beread_keyspace
+      SHARD: "-80"
+      VTHOST: vttablet_beread_cell1_replica
     ports:
       - 15402:8080
       - "15999"
       - "3306"
-    volumes:
-      - .:/script
-    networks:
-      - vitess_net
 
   # --- POPULAR-RANK KEYSPACE (temporalGranularity=daily) - Cell1 ---
   vttablet_popularrank_cell1_primary:
-    platform: linux/amd64
-    command:
-      - sh
-      - -c
-      - /script/vttablet-up.sh 501
-    depends_on:
-      - vtctld
+    <<: *vttablet-base
     environment:
-      - TOPOLOGY_FLAGS=--topo-implementation consul --topo-global-server-address consul1:8500
-        --topo-global-root vitess/global
-      - WEB_PORT=8080
-      - GRPC_PORT=15999
-      - CELL=cell1
-      - KEYSPACE=popularrank_keyspace
-      - SHARD=-80
-      - VTHOST=vttablet_popularrank_cell1_primary
-      - EXTERNAL_DB=0
-      - SLEEPTIME=30
-      - DB_PORT=
-      - DB_HOST=
-      - DB_USER=
-      - DB_PASS=
-      - DB_CHARSET=
-    healthcheck:
-      interval: 30s
-      retries: 15
-      test:
-        - CMD-SHELL
-        - curl -s --fail --show-error localhost:8080/debug/health
-      timeout: 10s
-    image: vitess/lite:v23.0.0
+      <<: *vttablet-env-base
+      TABLET_UID: 501
+      CELL: cell1
+      KEYSPACE: popularrank_keyspace
+      SHARD: "-80"
+      VTHOST: vttablet_popularrank_cell1_primary
     ports:
       - 15501:8080
       - "15999"
       - "3306"
-    volumes:
-      - .:/script
-    networks:
-      - vitess_net
 
   vttablet_popularrank_cell1_replica:
-    platform: linux/amd64
-    command:
-      - sh
-      - -c
-      - /script/vttablet-up.sh 502
-    depends_on:
-      - vtctld
+    <<: *vttablet-base
     environment:
-      - TOPOLOGY_FLAGS=--topo-implementation consul --topo-global-server-address consul1:8500
-        --topo-global-root vitess/global
-      - WEB_PORT=8080
-      - GRPC_PORT=15999
-      - CELL=cell1
-      - KEYSPACE=popularrank_keyspace
-      - SHARD=-80
-      - VTHOST=vttablet_popularrank_cell1_replica
-      - EXTERNAL_DB=0
-      - SLEEPTIME=30
-      - DB_PORT=
-      - DB_HOST=
-      - DB_USER=
-      - DB_PASS=
-      - DB_CHARSET=
-    healthcheck:
-      interval: 30s
-      retries: 15
-      test:
-        - CMD-SHELL
-        - curl -s --fail --show-error localhost:8080/debug/health
-      timeout: 10s
-    image: vitess/lite:v23.0.0
+      <<: *vttablet-env-base
+      TABLET_UID: 502
+      CELL: cell1
+      KEYSPACE: popularrank_keyspace
+      SHARD: "-80"
+      VTHOST: vttablet_popularrank_cell1_replica
     ports:
       - 15502:8080
       - "15999"
       - "3306"
-    volumes:
-      - .:/script
-    networks:
-      - vitess_net
 
   # ===========================================
   # CELL2 (HongKong/DBMS2) TABLETS
@@ -578,578 +344,205 @@ services:
 
   # --- USER KEYSPACE (region=HongKong) - Cell2 ---
   vttablet_user_cell2_primary:
-    platform: linux/amd64
-    command:
-      - sh
-      - -c
-      - /script/vttablet-up.sh 601
-    depends_on:
-      - vtctld
+    <<: *vttablet-base
     environment:
-      - TOPOLOGY_FLAGS=--topo-implementation consul --topo-global-server-address consul1:8500
-        --topo-global-root vitess/global
-      - WEB_PORT=8080
-      - GRPC_PORT=15999
-      - CELL=cell2
-      - KEYSPACE=user_keyspace
-      - SHARD=80-
-      - VTHOST=vttablet_user_cell2_primary
-      - EXTERNAL_DB=0
-      - SLEEPTIME=30
-      - DB_PORT=
-      - DB_HOST=
-      - DB_USER=
-      - DB_PASS=
-      - DB_CHARSET=
-    healthcheck:
-      interval: 30s
-      retries: 15
-      test:
-        - CMD-SHELL
-        - curl -s --fail --show-error localhost:8080/debug/health
-      timeout: 10s
-    image: vitess/lite:v23.0.0
+      <<: *vttablet-env-base
+      TABLET_UID: 601
+      CELL: cell2
+      KEYSPACE: user_keyspace
+      SHARD: "80-"
+      VTHOST: vttablet_user_cell2_primary
     ports:
       - 15601:8080
       - "15999"
       - "3306"
-    volumes:
-      - .:/script
-    networks:
-      - vitess_net
 
   vttablet_user_cell2_replica:
-    platform: linux/amd64
-    command:
-      - sh
-      - -c
-      - /script/vttablet-up.sh 602
-    depends_on:
-      - vtctld
+    <<: *vttablet-base
     environment:
-      - TOPOLOGY_FLAGS=--topo-implementation consul --topo-global-server-address consul1:8500
-        --topo-global-root vitess/global
-      - WEB_PORT=8080
-      - GRPC_PORT=15999
-      - CELL=cell2
-      - KEYSPACE=user_keyspace
-      - SHARD=80-
-      - VTHOST=vttablet_user_cell2_replica
-      - EXTERNAL_DB=0
-      - SLEEPTIME=30
-      - DB_PORT=
-      - DB_HOST=
-      - DB_USER=
-      - DB_PASS=
-      - DB_CHARSET=
-    healthcheck:
-      interval: 30s
-      retries: 15
-      test:
-        - CMD-SHELL
-        - curl -s --fail --show-error localhost:8080/debug/health
-      timeout: 10s
-    image: vitess/lite:v23.0.0
+      <<: *vttablet-env-base
+      TABLET_UID: 602
+      CELL: cell2
+      KEYSPACE: user_keyspace
+      SHARD: "80-"
+      VTHOST: vttablet_user_cell2_replica
     ports:
       - 15602:8080
       - "15999"
       - "3306"
-    volumes:
-      - .:/script
-    networks:
-      - vitess_net
+
 
   # --- ARTICLE KEYSPACE (category=science replica + technology) - Cell2 ---
   # Science shard - receives data via VReplication from Cell1
   vttablet_article_cell2_science_primary:
-    platform: linux/amd64
-    command:
-      - sh
-      - -c
-      - /script/vttablet-up.sh 701
-    depends_on:
-      - vtctld
+    <<: *vttablet-base
     environment:
-      - TOPOLOGY_FLAGS=--topo-implementation consul --topo-global-server-address consul1:8500
-        --topo-global-root vitess/global
-      - WEB_PORT=8080
-      - GRPC_PORT=15999
-      - CELL=cell2
-      - KEYSPACE=article_keyspace
-      - SHARD=-80
-      - VTHOST=vttablet_article_cell2_science_primary
-      - EXTERNAL_DB=0
-      - SLEEPTIME=30
-      - DB_PORT=
-      - DB_HOST=
-      - DB_USER=
-      - DB_PASS=
-      - DB_CHARSET=
-    healthcheck:
-      interval: 30s
-      retries: 15
-      test:
-        - CMD-SHELL
-        - curl -s --fail --show-error localhost:8080/debug/health
-      timeout: 10s
-    image: vitess/lite:v23.0.0
+      <<: *vttablet-env-base
+      TABLET_UID: 701
+      CELL: cell2
+      KEYSPACE: article_keyspace
+      SHARD: "-80"
+      VTHOST: vttablet_article_cell2_science_primary
     ports:
       - 15701:8080
       - "15999"
       - "3306"
-    volumes:
-      - .:/script
-    networks:
-      - vitess_net
 
   # Technology shard - only in Cell2
   vttablet_article_cell2_tech_primary:
-    platform: linux/amd64
-    command:
-      - sh
-      - -c
-      - /script/vttablet-up.sh 711
-    depends_on:
-      - vtctld
+    <<: *vttablet-base
     environment:
-      - TOPOLOGY_FLAGS=--topo-implementation consul --topo-global-server-address consul1:8500
-        --topo-global-root vitess/global
-      - WEB_PORT=8080
-      - GRPC_PORT=15999
-      - CELL=cell2
-      - KEYSPACE=article_keyspace
-      - SHARD=80-
-      - VTHOST=vttablet_article_cell2_tech_primary
-      - EXTERNAL_DB=0
-      - SLEEPTIME=30
-      - DB_PORT=
-      - DB_HOST=
-      - DB_USER=
-      - DB_PASS=
-      - DB_CHARSET=
-    healthcheck:
-      interval: 30s
-      retries: 15
-      test:
-        - CMD-SHELL
-        - curl -s --fail --show-error localhost:8080/debug/health
-      timeout: 10s
-    image: vitess/lite:v23.0.0
+      <<: *vttablet-env-base
+      TABLET_UID: 711
+      CELL: cell2
+      KEYSPACE: article_keyspace
+      SHARD: "80-"
+      VTHOST: vttablet_article_cell2_tech_primary
     ports:
       - 15711:8080
       - "15999"
       - "3306"
-    volumes:
-      - .:/script
-    networks:
-      - vitess_net
 
   vttablet_article_cell2_tech_replica:
-    platform: linux/amd64
-    command:
-      - sh
-      - -c
-      - /script/vttablet-up.sh 712
-    depends_on:
-      - vtctld
+    <<: *vttablet-base
     environment:
-      - TOPOLOGY_FLAGS=--topo-implementation consul --topo-global-server-address consul1:8500
-        --topo-global-root vitess/global
-      - WEB_PORT=8080
-      - GRPC_PORT=15999
-      - CELL=cell2
-      - KEYSPACE=article_keyspace
-      - SHARD=80-
-      - VTHOST=vttablet_article_cell2_tech_replica
-      - EXTERNAL_DB=0
-      - SLEEPTIME=30
-      - DB_PORT=
-      - DB_HOST=
-      - DB_USER=
-      - DB_PASS=
-      - DB_CHARSET=
-    healthcheck:
-      interval: 30s
-      retries: 15
-      test:
-        - CMD-SHELL
-        - curl -s --fail --show-error localhost:8080/debug/health
-      timeout: 10s
-    image: vitess/lite:v23.0.0
+      <<: *vttablet-env-base
+      TABLET_UID: 712
+      CELL: cell2
+      KEYSPACE: article_keyspace
+      SHARD: "80-"
+      VTHOST: vttablet_article_cell2_tech_replica
     ports:
       - 15712:8080
       - "15999"
       - "3306"
-    volumes:
-      - .:/script
-    networks:
-      - vitess_net
 
   # --- READ KEYSPACE (follows User, region=HongKong) - Cell2 ---
   vttablet_read_cell2_primary:
-    platform: linux/amd64
-    command:
-      - sh
-      - -c
-      - /script/vttablet-up.sh 801
-    depends_on:
-      - vtctld
+    <<: *vttablet-base
     environment:
-      - TOPOLOGY_FLAGS=--topo-implementation consul --topo-global-server-address consul1:8500
-        --topo-global-root vitess/global
-      - WEB_PORT=8080
-      - GRPC_PORT=15999
-      - CELL=cell2
-      - KEYSPACE=read_keyspace
-      - SHARD=80-
-      - VTHOST=vttablet_read_cell2_primary
-      - EXTERNAL_DB=0
-      - SLEEPTIME=30
-      - DB_PORT=
-      - DB_HOST=
-      - DB_USER=
-      - DB_PASS=
-      - DB_CHARSET=
-    healthcheck:
-      interval: 30s
-      retries: 15
-      test:
-        - CMD-SHELL
-        - curl -s --fail --show-error localhost:8080/debug/health
-      timeout: 10s
-    image: vitess/lite:v23.0.0
+      <<: *vttablet-env-base
+      TABLET_UID: 801
+      CELL: cell2
+      KEYSPACE: read_keyspace
+      SHARD: "80-"
+      VTHOST: vttablet_read_cell2_primary
     ports:
       - 15801:8080
       - "15999"
       - "3306"
-    volumes:
-      - .:/script
-    networks:
-      - vitess_net
 
   vttablet_read_cell2_replica:
-    platform: linux/amd64
-    command:
-      - sh
-      - -c
-      - /script/vttablet-up.sh 802
-    depends_on:
-      - vtctld
+    <<: *vttablet-base
     environment:
-      - TOPOLOGY_FLAGS=--topo-implementation consul --topo-global-server-address consul1:8500
-        --topo-global-root vitess/global
-      - WEB_PORT=8080
-      - GRPC_PORT=15999
-      - CELL=cell2
-      - KEYSPACE=read_keyspace
-      - SHARD=80-
-      - VTHOST=vttablet_read_cell2_replica
-      - EXTERNAL_DB=0
-      - SLEEPTIME=30
-      - DB_PORT=
-      - DB_HOST=
-      - DB_USER=
-      - DB_PASS=
-      - DB_CHARSET=
-    healthcheck:
-      interval: 30s
-      retries: 15
-      test:
-        - CMD-SHELL
-        - curl -s --fail --show-error localhost:8080/debug/health
-      timeout: 10s
-    image: vitess/lite:v23.0.0
+      <<: *vttablet-env-base
+      TABLET_UID: 802
+      CELL: cell2
+      KEYSPACE: read_keyspace
+      SHARD: "80-"
+      VTHOST: vttablet_read_cell2_replica
     ports:
       - 15802:8080
       - "15999"
       - "3306"
-    volumes:
-      - .:/script
-    networks:
-      - vitess_net
 
   # --- BE-READ KEYSPACE (science replica + technology) - Cell2 ---
   # Science shard - receives data via VReplication from Cell1
   vttablet_beread_cell2_science_primary:
-    platform: linux/amd64
-    command:
-      - sh
-      - -c
-      - /script/vttablet-up.sh 901
-    depends_on:
-      - vtctld
+    <<: *vttablet-base
     environment:
-      - TOPOLOGY_FLAGS=--topo-implementation consul --topo-global-server-address consul1:8500
-        --topo-global-root vitess/global
-      - WEB_PORT=8080
-      - GRPC_PORT=15999
-      - CELL=cell2
-      - KEYSPACE=beread_keyspace
-      - SHARD=-80
-      - VTHOST=vttablet_beread_cell2_science_primary
-      - EXTERNAL_DB=0
-      - SLEEPTIME=30
-      - DB_PORT=
-      - DB_HOST=
-      - DB_USER=
-      - DB_PASS=
-      - DB_CHARSET=
-    healthcheck:
-      interval: 30s
-      retries: 15
-      test:
-        - CMD-SHELL
-        - curl -s --fail --show-error localhost:8080/debug/health
-      timeout: 10s
-    image: vitess/lite:v23.0.0
+      <<: *vttablet-env-base
+      TABLET_UID: 901
+      CELL: cell2
+      KEYSPACE: beread_keyspace
+      SHARD: "-80"
+      VTHOST: vttablet_beread_cell2_science_primary
     ports:
       - 15901:8080
       - "15999"
       - "3306"
-    volumes:
-      - .:/script
-    networks:
-      - vitess_net
 
   # Technology shard - only in Cell2
   vttablet_beread_cell2_tech_primary:
-    platform: linux/amd64
-    command:
-      - sh
-      - -c
-      - /script/vttablet-up.sh 911
-    depends_on:
-      - vtctld
+    <<: *vttablet-base
     environment:
-      - TOPOLOGY_FLAGS=--topo-implementation consul --topo-global-server-address consul1:8500
-        --topo-global-root vitess/global
-      - WEB_PORT=8080
-      - GRPC_PORT=15999
-      - CELL=cell2
-      - KEYSPACE=beread_keyspace
-      - SHARD=80-
-      - VTHOST=vttablet_beread_cell2_tech_primary
-      - EXTERNAL_DB=0
-      - SLEEPTIME=30
-      - DB_PORT=
-      - DB_HOST=
-      - DB_USER=
-      - DB_PASS=
-      - DB_CHARSET=
-    healthcheck:
-      interval: 30s
-      retries: 15
-      test:
-        - CMD-SHELL
-        - curl -s --fail --show-error localhost:8080/debug/health
-      timeout: 10s
-    image: vitess/lite:v23.0.0
+      <<: *vttablet-env-base
+      TABLET_UID: 911
+      CELL: cell2
+      KEYSPACE: beread_keyspace
+      SHARD: "80-"
+      VTHOST: vttablet_beread_cell2_tech_primary
     ports:
       - 15911:8080
       - "15999"
       - "3306"
-    volumes:
-      - .:/script
-    networks:
-      - vitess_net
 
   vttablet_beread_cell2_tech_replica:
-    platform: linux/amd64
-    command:
-      - sh
-      - -c
-      - /script/vttablet-up.sh 912
-    depends_on:
-      - vtctld
+    <<: *vttablet-base
     environment:
-      - TOPOLOGY_FLAGS=--topo-implementation consul --topo-global-server-address consul1:8500
-        --topo-global-root vitess/global
-      - WEB_PORT=8080
-      - GRPC_PORT=15999
-      - CELL=cell2
-      - KEYSPACE=beread_keyspace
-      - SHARD=80-
-      - VTHOST=vttablet_beread_cell2_tech_replica
-      - EXTERNAL_DB=0
-      - SLEEPTIME=30
-      - DB_PORT=
-      - DB_HOST=
-      - DB_USER=
-      - DB_PASS=
-      - DB_CHARSET=
-    healthcheck:
-      interval: 30s
-      retries: 15
-      test:
-        - CMD-SHELL
-        - curl -s --fail --show-error localhost:8080/debug/health
-      timeout: 10s
-    image: vitess/lite:v23.0.0
+      <<: *vttablet-env-base
+      TABLET_UID: 912
+      CELL: cell2
+      KEYSPACE: beread_keyspace
+      SHARD: "80-"
+      VTHOST: vttablet_beread_cell2_tech_replica
     ports:
       - 15912:8080
       - "15999"
       - "3306"
-    volumes:
-      - .:/script
-    networks:
-      - vitess_net
 
   # --- POPULAR-RANK KEYSPACE (weekly + monthly) - Cell2 ---
   vttablet_popularrank_cell2_weekly_primary:
-    platform: linux/amd64
-    command:
-      - sh
-      - -c
-      - /script/vttablet-up.sh 1001
-    depends_on:
-      - vtctld
+    <<: *vttablet-base
     environment:
-      - TOPOLOGY_FLAGS=--topo-implementation consul --topo-global-server-address consul1:8500
-        --topo-global-root vitess/global
-      - WEB_PORT=8080
-      - GRPC_PORT=15999
-      - CELL=cell2
-      - KEYSPACE=popularrank_keyspace
-      - SHARD=80-c0
-      - VTHOST=vttablet_popularrank_cell2_weekly_primary
-      - EXTERNAL_DB=0
-      - SLEEPTIME=30
-      - DB_PORT=
-      - DB_HOST=
-      - DB_USER=
-      - DB_PASS=
-      - DB_CHARSET=
-    healthcheck:
-      interval: 30s
-      retries: 15
-      test:
-        - CMD-SHELL
-        - curl -s --fail --show-error localhost:8080/debug/health
-      timeout: 10s
-    image: vitess/lite:v23.0.0
+      <<: *vttablet-env-base
+      TABLET_UID: 1001
+      CELL: cell2
+      KEYSPACE: popularrank_keyspace
+      SHARD: 80-c0
+      VTHOST: vttablet_popularrank_cell2_weekly_primary
     ports:
       - 16001:8080
       - "15999"
       - "3306"
-    volumes:
-      - .:/script
-    networks:
-      - vitess_net
 
   vttablet_popularrank_cell2_weekly_replica:
-    platform: linux/amd64
-    command:
-      - sh
-      - -c
-      - /script/vttablet-up.sh 1002
-    depends_on:
-      - vtctld
+    <<: *vttablet-base
     environment:
-      - TOPOLOGY_FLAGS=--topo-implementation consul --topo-global-server-address consul1:8500
-        --topo-global-root vitess/global
-      - WEB_PORT=8080
-      - GRPC_PORT=15999
-      - CELL=cell2
-      - KEYSPACE=popularrank_keyspace
-      - SHARD=80-c0
-      - VTHOST=vttablet_popularrank_cell2_weekly_replica
-      - EXTERNAL_DB=0
-      - SLEEPTIME=30
-      - DB_PORT=
-      - DB_HOST=
-      - DB_USER=
-      - DB_PASS=
-      - DB_CHARSET=
-    healthcheck:
-      interval: 30s
-      retries: 15
-      test:
-        - CMD-SHELL
-        - curl -s --fail --show-error localhost:8080/debug/health
-      timeout: 10s
-    image: vitess/lite:v23.0.0
+      <<: *vttablet-env-base
+      TABLET_UID: 1002
+      CELL: cell2
+      KEYSPACE: popularrank_keyspace
+      SHARD: 80-c0
+      VTHOST: vttablet_popularrank_cell2_weekly_replica
     ports:
       - 16002:8080
       - "15999"
       - "3306"
-    volumes:
-      - .:/script
-    networks:
-      - vitess_net
 
   vttablet_popularrank_cell2_monthly_primary:
-    platform: linux/amd64
-    command:
-      - sh
-      - -c
-      - /script/vttablet-up.sh 1011
-    depends_on:
-      - vtctld
+    <<: *vttablet-base
     environment:
-      - TOPOLOGY_FLAGS=--topo-implementation consul --topo-global-server-address consul1:8500
-        --topo-global-root vitess/global
-      - WEB_PORT=8080
-      - GRPC_PORT=15999
-      - CELL=cell2
-      - KEYSPACE=popularrank_keyspace
-      - SHARD=c0-
-      - VTHOST=vttablet_popularrank_cell2_monthly_primary
-      - EXTERNAL_DB=0
-      - SLEEPTIME=30
-      - DB_PORT=
-      - DB_HOST=
-      - DB_USER=
-      - DB_PASS=
-      - DB_CHARSET=
-    healthcheck:
-      interval: 30s
-      retries: 15
-      test:
-        - CMD-SHELL
-        - curl -s --fail --show-error localhost:8080/debug/health
-      timeout: 10s
-    image: vitess/lite:v23.0.0
+      <<: *vttablet-env-base
+      TABLET_UID: 1011
+      CELL: cell2
+      KEYSPACE: popularrank_keyspace
+      SHARD: c0-
+      VTHOST: vttablet_popularrank_cell2_monthly_primary
     ports:
       - 16011:8080
       - "15999"
       - "3306"
-    volumes:
-      - .:/script
-    networks:
-      - vitess_net
 
   vttablet_popularrank_cell2_monthly_replica:
-    platform: linux/amd64
-    command:
-      - sh
-      - -c
-      - /script/vttablet-up.sh 1012
-    depends_on:
-      - vtctld
+    <<: *vttablet-base
     environment:
-      - TOPOLOGY_FLAGS=--topo-implementation consul --topo-global-server-address consul1:8500
-        --topo-global-root vitess/global
-      - WEB_PORT=8080
-      - GRPC_PORT=15999
-      - CELL=cell2
-      - KEYSPACE=popularrank_keyspace
-      - SHARD=c0-
-      - VTHOST=vttablet_popularrank_cell2_monthly_replica
-      - EXTERNAL_DB=0
-      - SLEEPTIME=30
-      - DB_PORT=
-      - DB_HOST=
-      - DB_USER=
-      - DB_PASS=
-      - DB_CHARSET=
-    healthcheck:
-      interval: 30s
-      retries: 15
-      test:
-        - CMD-SHELL
-        - curl -s --fail --show-error localhost:8080/debug/health
-      timeout: 10s
-    image: vitess/lite:v23.0.0
+      <<: *vttablet-env-base
+      TABLET_UID: 1012
+      CELL: cell2
+      KEYSPACE: popularrank_keyspace
+      SHARD: c0-
+      VTHOST: vttablet_popularrank_cell2_monthly_replica
     ports:
       - 16012:8080
       - "15999"
