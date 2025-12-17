@@ -3,31 +3,28 @@ groups:
     interval: 1m
     rules:
       - alert: TabletHighQPS
-        expr: sum by (instance) (rate(vttablet_queries_count[1m])) > 5
+        expr: sum by (instance) (increase(vttablet_query_counts[1m])) > 1
         for: 1m
         labels:
           severity: warning
         annotations:
           summary: "High QPS on {{ $labels.instance }}"
-          description: '{{ $labels.instance }} QPS {{ $value | printf "%.2f" }} > 5'
 
       - alert: TabletHighErrorRate
         expr: (
           sum by (instance) (rate(vttablet_query_error_counts[5m]))
           /
-          sum by (instance) (rate(vttablet_queries_count[5m]))) * 100 > 0.5
+          sum by (instance) (rate(vttablet_query_counts[5m]))) * 100 > 0.5
         for: 1m
         labels:
           severity: warning
         annotations:
           summary: "High error rate on {{ $labels.instance }}"
-          description: 'Error rate {{ $value | printf "%.2f" }}% > 0.5% on {{ $labels.instance }}'
 
       - alert: TabletHighProcessCPU
-        expr: rate(process_cpu_seconds_total{job="vttablets"}[1m]) > 0.6
-        for: 3m
+        expr: rate(process_cpu_seconds_total{job="vttablets"}[1m]) > 0.1
+        for: 1m
         labels:
           severity: critical
         annotations:
           summary: "High process CPU on {{ $labels.instance }}"
-          description: "process_cpu_seconds_total rate > 0.6s/s (approx >60% on single core)"
