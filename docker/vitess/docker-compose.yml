@@ -187,13 +187,11 @@ services:
     networks:
       - vitess_net
 
-  # ===========================================
-  # CELL1 (Beijing/DBMS1) TABLETS
-  # ===========================================
 
-  # --- USER KEYSPACE (region=Beijing) - Cell1 ---
-  # Shard: beijing (region-based sharding)
-  vttablet_user_cell1_primary:
+  # --- USER KEYSPACE (sharded on region)
+  # Shard1: beijing 
+  # Shard2: honkong 
+  vttablet_user_shard1_primary:
     <<: *vttablet-base
     environment:
       <<: *vttablet-env-base
@@ -201,13 +199,13 @@ services:
       CELL: cell1
       KEYSPACE: user_keyspace
       SHARD: "-80"
-      VTHOST: vttablet_user_cell1_primary
+      VTHOST: vttablet_user_shard1_primary
     ports:
       - 15101:8080
       - "15999"
       - "3306"
 
-  vttablet_user_cell1_replica:
+  vttablet_user_shard1_backup:
     <<: *vttablet-base
     environment:
       <<: *vttablet-env-base
@@ -215,135 +213,13 @@ services:
       CELL: cell1
       KEYSPACE: user_keyspace
       SHARD: "-80"
-      VTHOST: vttablet_user_cell1_replica
+      VTHOST: vttablet_user_shard1_backup
     ports:
       - 15102:8080
       - "15999"
       - "3306"
 
-  # --- ARTICLE KEYSPACE (category=science) - Cell1 ---
-  # This is the PRIMARY for science category, Cell2 will receive via VReplication
-  vttablet_article_cell1_primary:
-    <<: *vttablet-base
-    environment:
-      <<: *vttablet-env-base
-      TABLET_UID: 201
-      CELL: cell1
-      KEYSPACE: article_keyspace
-      SHARD: "-80"
-      VTHOST: vttablet_article_cell1_primary
-    ports:
-      - 15201:8080
-      - "15999"
-      - "3306"
-
-  vttablet_article_cell1_replica:
-    <<: *vttablet-base
-    environment:
-      <<: *vttablet-env-base
-      TABLET_UID: 202
-      CELL: cell1
-      KEYSPACE: article_keyspace
-      SHARD: "-80"
-      VTHOST: vttablet_article_cell1_replica
-    ports:
-      - 15202:8080
-      - "15999"
-      - "3306"
-
-  # --- READ KEYSPACE (follows User, region=Beijing) - Cell1 ---
-  vttablet_read_cell1_primary:
-    <<: *vttablet-base
-    environment:
-      <<: *vttablet-env-base
-      TABLET_UID: 301
-      CELL: cell1
-      KEYSPACE: read_keyspace
-      SHARD: "-80"
-      VTHOST: vttablet_read_cell1_primary
-    ports:
-      - 15301:8080
-      - "15999"
-      - "3306"
-
-  vttablet_read_cell1_replica:
-    <<: *vttablet-base
-    environment:
-      <<: *vttablet-env-base
-      TABLET_UID: 302
-      CELL: cell1
-      KEYSPACE: read_keyspace
-      SHARD: "-80"
-      VTHOST: vttablet_read_cell1_replica
-    ports:
-      - 15302:8080
-      - "15999"
-      - "3306"
-
-  # --- BE-READ KEYSPACE (category=science) - Cell1 ---
-  vttablet_beread_cell1_primary:
-    <<: *vttablet-base
-    environment:
-      <<: *vttablet-env-base
-      TABLET_UID: 401
-      CELL: cell1
-      KEYSPACE: beread_keyspace
-      SHARD: "-80"
-      VTHOST: vttablet_beread_cell1_primary
-    ports:
-      - 15401:8080
-      - "15999"
-      - "3306"
-
-  vttablet_beread_cell1_replica:
-    <<: *vttablet-base
-    environment:
-      <<: *vttablet-env-base
-      TABLET_UID: 402
-      CELL: cell1
-      KEYSPACE: beread_keyspace
-      SHARD: "-80"
-      VTHOST: vttablet_beread_cell1_replica
-    ports:
-      - 15402:8080
-      - "15999"
-      - "3306"
-
-  # --- POPULAR-RANK KEYSPACE (temporalGranularity=daily) - Cell1 ---
-  vttablet_popularrank_cell1_primary:
-    <<: *vttablet-base
-    environment:
-      <<: *vttablet-env-base
-      TABLET_UID: 501
-      CELL: cell1
-      KEYSPACE: popularrank_keyspace
-      SHARD: "-80"
-      VTHOST: vttablet_popularrank_cell1_primary
-    ports:
-      - 15501:8080
-      - "15999"
-      - "3306"
-
-  vttablet_popularrank_cell1_replica:
-    <<: *vttablet-base
-    environment:
-      <<: *vttablet-env-base
-      TABLET_UID: 502
-      CELL: cell1
-      KEYSPACE: popularrank_keyspace
-      SHARD: "-80"
-      VTHOST: vttablet_popularrank_cell1_replica
-    ports:
-      - 15502:8080
-      - "15999"
-      - "3306"
-
-  # ===========================================
-  # CELL2 (HongKong/DBMS2) TABLETS
-  # ===========================================
-
-  # --- USER KEYSPACE (region=HongKong) - Cell2 ---
-  vttablet_user_cell2_primary:
+  vttablet_user_shard2_primary:
     <<: *vttablet-base
     environment:
       <<: *vttablet-env-base
@@ -351,13 +227,13 @@ services:
       CELL: cell2
       KEYSPACE: user_keyspace
       SHARD: "80-"
-      VTHOST: vttablet_user_cell2_primary
+      VTHOST: vttablet_user_shard2_primary
     ports:
       - 15601:8080
       - "15999"
       - "3306"
 
-  vttablet_user_cell2_replica:
+  vttablet_user_shard2_backup:
     <<: *vttablet-base
     environment:
       <<: *vttablet-env-base
@@ -365,16 +241,30 @@ services:
       CELL: cell2
       KEYSPACE: user_keyspace
       SHARD: "80-"
-      VTHOST: vttablet_user_cell2_replica
+      VTHOST: vttablet_user_shard2_backup
     ports:
       - 15602:8080
       - "15999"
       - "3306"
 
+  # --- ARTICLE KEYSPACE (sharded on category)  
+  # Shard1: science    (Cell1 primary, Cell2 replica)
+  # Shard2: technology (Cell2 primary)
+  vttablet_article_shard1_primary:
+    <<: *vttablet-base
+    environment:
+      <<: *vttablet-env-base
+      TABLET_UID: 201
+      CELL: cell1
+      KEYSPACE: article_keyspace
+      SHARD: "-80"
+      VTHOST: vttablet_article_shard1_primary
+    ports:
+      - 15201:8080
+      - "15999"
+      - "3306"
 
-  # --- ARTICLE KEYSPACE (category=science replica + technology) - Cell2 ---
-  # Science shard - receives data via VReplication from Cell1
-  vttablet_article_cell2_science_primary:
+  vttablet_article_shard1_replica:
     <<: *vttablet-base
     environment:
       <<: *vttablet-env-base
@@ -382,14 +272,28 @@ services:
       CELL: cell2
       KEYSPACE: article_keyspace
       SHARD: "-80"
-      VTHOST: vttablet_article_cell2_science_primary
+      VTHOST: vttablet_article_shard1_replica
     ports:
       - 15701:8080
       - "15999"
       - "3306"
 
+  vttablet_article_shard1_backup:
+    <<: *vttablet-base
+    environment:
+      <<: *vttablet-env-base
+      TABLET_UID: 202
+      CELL: cell1
+      KEYSPACE: article_keyspace
+      SHARD: "-80"
+      VTHOST: vttablet_article_shard1_backup
+    ports:
+      - 15202:8080
+      - "15999"
+      - "3306"
+
   # Technology shard - only in Cell2
-  vttablet_article_cell2_tech_primary:
+  vttablet_article_shard2_primary:
     <<: *vttablet-base
     environment:
       <<: *vttablet-env-base
@@ -397,13 +301,13 @@ services:
       CELL: cell2
       KEYSPACE: article_keyspace
       SHARD: "80-"
-      VTHOST: vttablet_article_cell2_tech_primary
+      VTHOST: vttablet_article_shard2_primary
     ports:
       - 15711:8080
       - "15999"
       - "3306"
 
-  vttablet_article_cell2_tech_replica:
+  vttablet_article_shard2_backup:
     <<: *vttablet-base
     environment:
       <<: *vttablet-env-base
@@ -411,14 +315,42 @@ services:
       CELL: cell2
       KEYSPACE: article_keyspace
       SHARD: "80-"
-      VTHOST: vttablet_article_cell2_tech_replica
+      VTHOST: vttablet_article_shard2_backup
     ports:
       - 15712:8080
       - "15999"
       - "3306"
 
-  # --- READ KEYSPACE (follows User, region=HongKong) - Cell2 ---
-  vttablet_read_cell2_primary:
+  # --- READ KEYSPACE (follows User sharding)
+  vttablet_read_shard1_primary:
+    <<: *vttablet-base
+    environment:
+      <<: *vttablet-env-base
+      TABLET_UID: 301
+      CELL: cell1
+      KEYSPACE: read_keyspace
+      SHARD: "-80"
+      VTHOST: vttablet_read_shard1_primary
+    ports:
+      - 15301:8080
+      - "15999"
+      - "3306"
+
+  vttablet_read_shard1_backup:
+    <<: *vttablet-base
+    environment:
+      <<: *vttablet-env-base
+      TABLET_UID: 302
+      CELL: cell1
+      KEYSPACE: read_keyspace
+      SHARD: "-80"
+      VTHOST: vttablet_read_shard1_backup
+    ports:
+      - 15302:8080
+      - "15999"
+      - "3306"
+
+  vttablet_read_shard2_primary:
     <<: *vttablet-base
     environment:
       <<: *vttablet-env-base
@@ -426,13 +358,13 @@ services:
       CELL: cell2
       KEYSPACE: read_keyspace
       SHARD: "80-"
-      VTHOST: vttablet_read_cell2_primary
+      VTHOST: vttablet_read_shard2_primary
     ports:
       - 15801:8080
       - "15999"
       - "3306"
 
-  vttablet_read_cell2_replica:
+  vttablet_read_shard2_backup:
     <<: *vttablet-base
     environment:
       <<: *vttablet-env-base
@@ -440,15 +372,29 @@ services:
       CELL: cell2
       KEYSPACE: read_keyspace
       SHARD: "80-"
-      VTHOST: vttablet_read_cell2_replica
+      VTHOST: vttablet_read_shard2_backup
     ports:
       - 15802:8080
       - "15999"
       - "3306"
 
-  # --- BE-READ KEYSPACE (science replica + technology) - Cell2 ---
-  # Science shard - receives data via VReplication from Cell1
-  vttablet_beread_cell2_science_primary:
+
+  # --- BE-READ KEYSPACE (follows article sharding)
+  vttablet_beread_shard1_primary:
+    <<: *vttablet-base
+    environment:
+      <<: *vttablet-env-base
+      TABLET_UID: 401
+      CELL: cell1
+      KEYSPACE: beread_keyspace
+      SHARD: "-80"
+      VTHOST: vttablet_beread_shard1_primary
+    ports:
+      - 15401:8080
+      - "15999"
+      - "3306"
+
+  vttablet_beread_shard1_replica:
     <<: *vttablet-base
     environment:
       <<: *vttablet-env-base
@@ -456,14 +402,27 @@ services:
       CELL: cell2
       KEYSPACE: beread_keyspace
       SHARD: "-80"
-      VTHOST: vttablet_beread_cell2_science_primary
+      VTHOST: vttablet_beread_shard1_replica
     ports:
       - 15901:8080
       - "15999"
       - "3306"
 
-  # Technology shard - only in Cell2
-  vttablet_beread_cell2_tech_primary:
+  vttablet_beread_shard1_backup:
+    <<: *vttablet-base
+    environment:
+      <<: *vttablet-env-base
+      TABLET_UID: 402
+      CELL: cell1
+      KEYSPACE: beread_keyspace
+      SHARD: "-80"
+      VTHOST: vttablet_beread_shard1_backup
+    ports:
+      - 15402:8080
+      - "15999"
+      - "3306"
+
+  vttablet_beread_shard2_primary:
     <<: *vttablet-base
     environment:
       <<: *vttablet-env-base
@@ -471,13 +430,13 @@ services:
       CELL: cell2
       KEYSPACE: beread_keyspace
       SHARD: "80-"
-      VTHOST: vttablet_beread_cell2_tech_primary
+      VTHOST: vttablet_beread_shard2_primary
     ports:
       - 15911:8080
       - "15999"
       - "3306"
 
-  vttablet_beread_cell2_tech_replica:
+  vttablet_beread_shard2_backup:
     <<: *vttablet-base
     environment:
       <<: *vttablet-env-base
@@ -485,14 +444,46 @@ services:
       CELL: cell2
       KEYSPACE: beread_keyspace
       SHARD: "80-"
-      VTHOST: vttablet_beread_cell2_tech_replica
+      VTHOST: vttablet_beread_shard2_backup
     ports:
       - 15912:8080
       - "15999"
       - "3306"
 
-  # --- POPULAR-RANK KEYSPACE (weekly + monthly) - Cell2 ---
-  vttablet_popularrank_cell2_weekly_primary:
+
+  # --- POPULAR-RANK KEYSPACE (sharded on temporalGranularity)
+  # Shard1: daily (Cell1 primary)
+  # Shard2: weekly (Cell2 primary)
+  # Shard3: monthly (Cell2 primary)
+  vttablet_popularrank_shard1_primary:
+    <<: *vttablet-base
+    environment:
+      <<: *vttablet-env-base
+      TABLET_UID: 501
+      CELL: cell1
+      KEYSPACE: popularrank_keyspace
+      SHARD: "-80"
+      VTHOST: vttablet_popularrank_shard1_primary
+    ports:
+      - 15501:8080
+      - "15999"
+      - "3306"
+
+  vttablet_popularrank_shard1_backup:
+    <<: *vttablet-base
+    environment:
+      <<: *vttablet-env-base
+      TABLET_UID: 502
+      CELL: cell1
+      KEYSPACE: popularrank_keyspace
+      SHARD: "-80"
+      VTHOST: vttablet_popularrank_shard1_backup
+    ports:
+      - 15502:8080
+      - "15999"
+      - "3306"
+
+  vttablet_popularrank_shard2_primary:
     <<: *vttablet-base
     environment:
       <<: *vttablet-env-base
@@ -500,13 +491,13 @@ services:
       CELL: cell2
       KEYSPACE: popularrank_keyspace
       SHARD: 80-c0
-      VTHOST: vttablet_popularrank_cell2_weekly_primary
+      VTHOST: vttablet_popularrank_shard2_primary
     ports:
       - 16001:8080
       - "15999"
       - "3306"
 
-  vttablet_popularrank_cell2_weekly_replica:
+  vttablet_popularrank_shard2_backup:
     <<: *vttablet-base
     environment:
       <<: *vttablet-env-base
@@ -514,13 +505,13 @@ services:
       CELL: cell2
       KEYSPACE: popularrank_keyspace
       SHARD: 80-c0
-      VTHOST: vttablet_popularrank_cell2_weekly_replica
+      VTHOST: vttablet_popularrank_shard2_backup
     ports:
       - 16002:8080
       - "15999"
       - "3306"
 
-  vttablet_popularrank_cell2_monthly_primary:
+  vttablet_popularrank_shard3_primary:
     <<: *vttablet-base
     environment:
       <<: *vttablet-env-base
@@ -528,13 +519,13 @@ services:
       CELL: cell2
       KEYSPACE: popularrank_keyspace
       SHARD: c0-
-      VTHOST: vttablet_popularrank_cell2_monthly_primary
+      VTHOST: vttablet_popularrank_shard3_primary
     ports:
       - 16011:8080
       - "15999"
       - "3306"
 
-  vttablet_popularrank_cell2_monthly_replica:
+  vttablet_popularrank_shard3_backup:
     <<: *vttablet-base
     environment:
       <<: *vttablet-env-base
@@ -542,15 +533,11 @@ services:
       CELL: cell2
       KEYSPACE: popularrank_keyspace
       SHARD: c0-
-      VTHOST: vttablet_popularrank_cell2_monthly_replica
+      VTHOST: vttablet_popularrank_shard3_backup
     ports:
       - 16012:8080
       - "15999"
       - "3306"
-    volumes:
-      - .:/script
-    networks:
-      - vitess_net
 
   # ===========================================
   # SCHEMA LOADERS
