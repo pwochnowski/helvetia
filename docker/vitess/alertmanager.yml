@@ -8,10 +8,10 @@ global:
 
 route:
   receiver: team-email
-  group_by: ['alertname', 'instance']
-  group_wait: 10s
-  group_interval: 2m
-  repeat_interval: 1h
+  group_by: ['alertname']  # Group all instances of same alert type together
+  group_wait: 30s  # Wait 30s to batch alerts
+  group_interval: 5m  # Send grouped updates every 5m
+  repeat_interval: 4h  # Don't repeat resolved alerts for 4h
 
 receivers:
   - name: team-email
