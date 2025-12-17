@@ -540,165 +540,24 @@ services:
       - "3306"
 
   # ===========================================
-  # SCHEMA LOADERS
+  # SCHEMA LOADER - loads all keyspace schemas
   # ===========================================
-  schemaload_user_keyspace:
+  schemaload:
     platform: linux/amd64
     command:
       - sh
       - -c
-      - /script/schemaload.sh
+      - /script/schemaload-all.sh
     depends_on:
       - vtorc
     environment:
-      - TOPOLOGY_FLAGS=--topo-implementation consul --topo-global-server-address consul1:8500
-        --topo-global-root vitess/global
-      - WEB_PORT=8080
       - GRPC_PORT=15999
-      - CELL=cell1
-      - KEYSPACE=user_keyspace
-      - TARGETTAB=cell1-0000000101
       - SLEEPTIME=60
-      - VSCHEMA_FILE=vschema/user_vschema.json
-      - SCHEMA_FILES=create_user.sql
-      - POST_LOAD_FILE=
-      - EXTERNAL_DB=0
     image: vitess/lite:v23.0.0
     volumes:
       - .:/script
     networks:
       - vitess_net
-
-  schemaload_article_keyspace:
-    platform: linux/amd64
-    command:
-      - sh
-      - -c
-      - /script/schemaload.sh
-    depends_on:
-      - vtorc
-    environment:
-      - TOPOLOGY_FLAGS=--topo-implementation consul --topo-global-server-address consul1:8500
-        --topo-global-root vitess/global
-      - WEB_PORT=8080
-      - GRPC_PORT=15999
-      - CELL=cell1
-      - KEYSPACE=article_keyspace
-      - TARGETTAB=cell1-0000000201
-      - SLEEPTIME=60
-      - VSCHEMA_FILE=vschema/article_vschema.json
-      - SCHEMA_FILES=create_article.sql
-      - POST_LOAD_FILE=
-      - EXTERNAL_DB=0
-    image: vitess/lite:v23.0.0
-    volumes:
-      - .:/script
-    networks:
-      - vitess_net
-
-  schemaload_read_keyspace:
-    platform: linux/amd64
-    command:
-      - sh
-      - -c
-      - /script/schemaload.sh
-    depends_on:
-      - vtorc
-    environment:
-      - TOPOLOGY_FLAGS=--topo-implementation consul --topo-global-server-address consul1:8500
-        --topo-global-root vitess/global
-      - WEB_PORT=8080
-      - GRPC_PORT=15999
-      - CELL=cell1
-      - KEYSPACE=read_keyspace
-      - TARGETTAB=cell1-0000000301
-      - SLEEPTIME=60
-      - VSCHEMA_FILE=vschema/read_vschema.json
-      - SCHEMA_FILES=create_read.sql
-      - POST_LOAD_FILE=
-      - EXTERNAL_DB=0
-    image: vitess/lite:v23.0.0
-    volumes:
-      - .:/script
-    networks:
-      - vitess_net
-
-  schemaload_beread_keyspace:
-    platform: linux/amd64
-    command:
-      - sh
-      - -c
-      - /script/schemaload.sh
-    depends_on:
-      - vtorc
-    environment:
-      - TOPOLOGY_FLAGS=--topo-implementation consul --topo-global-server-address consul1:8500
-        --topo-global-root vitess/global
-      - WEB_PORT=8080
-      - GRPC_PORT=15999
-      - CELL=cell1
-      - KEYSPACE=beread_keyspace
-      - TARGETTAB=cell1-0000000401
-      - SLEEPTIME=60
-      - VSCHEMA_FILE=vschema/beread_vschema.json
-      - SCHEMA_FILES=create_beread.sql
-      - POST_LOAD_FILE=
-      - EXTERNAL_DB=0
-    image: vitess/lite:v23.0.0
-    volumes:
-      - .:/script
-    networks:
-      - vitess_net
-
-  schemaload_popularrank_keyspace:
-    platform: linux/amd64
-    command:
-      - sh
-      - -c
-      - /script/schemaload.sh
-    depends_on:
-      - vtorc
-    environment:
-      - TOPOLOGY_FLAGS=--topo-implementation consul --topo-global-server-address consul1:8500
-        --topo-global-root vitess/global
-      - WEB_PORT=8080
-      - GRPC_PORT=15999
-      - CELL=cell1
-      - KEYSPACE=popularrank_keyspace
-      - TARGETTAB=cell1-0000000501
-      - SLEEPTIME=60
-      - VSCHEMA_FILE=vschema/popularrank_vschema.json
-      - SCHEMA_FILES=create_popularrank.sql
-      - POST_LOAD_FILE=
-      - EXTERNAL_DB=0
-    image: vitess/lite:v23.0.0
-    volumes:
-      - .:/script
-    networks:
-      - vitess_net
-
-  # ===========================================
-  # VREPLICATION SETUP
-  # Sets up replication for Article and Be-Read (science category)
-  # ===========================================
-  # vreplication_setup:
-  #   platform: linux/amd64
-  #   command:
-  #     - sh
-  #     - -c
-  #     - /script/vreplication-setup.sh
-  #   depends_on:
-  #     - schemaload_article_keyspace
-  #     - schemaload_beread_keyspace
-  #   environment:
-  #     - TOPOLOGY_FLAGS=--topo-implementation consul --topo-global-server-address consul1:8500
-  #       --topo-global-root vitess/global
-  #     - GRPC_PORT=15999
-  #   image: vitess/lite:v23.0.0
-  #   volumes:
-  #     - .:/script
-  #   networks:
-  #     - vitess_net
 
   # ===========================================
   # VTADMIN API - Vitess Admin Backend
