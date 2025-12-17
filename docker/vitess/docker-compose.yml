@@ -1408,4 +1408,3 @@ services:
 networks:
   vitess_net:
     driver: bridge
-  
