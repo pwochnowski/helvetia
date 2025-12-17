@@ -169,6 +169,7 @@ services:
 
   # ===========================================
   # SET KEYSPACE DURABILITY POLICY
+  # Default: none (single primary). Use DURABILITY_POLICY=semi_sync with backups.
   # ===========================================
   set_keyspace_durability_policy:
     platform: linux/amd64
@@ -180,6 +181,7 @@ services:
       - vtctld
     environment:
       - GRPC_PORT=15999
+      - DURABILITY_POLICY=${DURABILITY_POLICY:-none}
       - KEYSPACES=user_keyspace article_keyspace read_keyspace beread_keyspace popularrank_keyspace
     image: vitess/lite:v23.0.0
     volumes:
@@ -207,6 +209,7 @@ services:
 
   vttablet_user_shard1_backup:
     <<: *vttablet-base
+    profiles: [backup]
     environment:
       <<: *vttablet-env-base
       TABLET_UID: 102
@@ -235,6 +238,7 @@ services:
 
   vttablet_user_shard2_backup:
     <<: *vttablet-base
+    profiles: [backup]
     environment:
       <<: *vttablet-env-base
       TABLET_UID: 602
@@ -280,6 +284,7 @@ services:
 
   vttablet_article_shard1_backup:
     <<: *vttablet-base
+    profiles: [backup]
     environment:
       <<: *vttablet-env-base
       TABLET_UID: 202
@@ -309,6 +314,7 @@ services:
 
   vttablet_article_shard2_backup:
     <<: *vttablet-base
+    profiles: [backup]
     environment:
       <<: *vttablet-env-base
       TABLET_UID: 712
@@ -338,6 +344,7 @@ services:
 
   vttablet_read_shard1_backup:
     <<: *vttablet-base
+    profiles: [backup]
     environment:
       <<: *vttablet-env-base
       TABLET_UID: 302
@@ -366,6 +373,7 @@ services:
 
   vttablet_read_shard2_backup:
     <<: *vttablet-base
+    profiles: [backup]
     environment:
       <<: *vttablet-env-base
       TABLET_UID: 802
@@ -410,6 +418,7 @@ services:
 
   vttablet_beread_shard1_backup:
     <<: *vttablet-base
+    profiles: [backup]
     environment:
       <<: *vttablet-env-base
       TABLET_UID: 402
@@ -438,6 +447,7 @@ services:
 
   vttablet_beread_shard2_backup:
     <<: *vttablet-base
+    profiles: [backup]
     environment:
       <<: *vttablet-env-base
       TABLET_UID: 912
@@ -471,6 +481,7 @@ services:
 
   vttablet_popularrank_shard1_backup:
     <<: *vttablet-base
+    profiles: [backup]
     environment:
       <<: *vttablet-env-base
       TABLET_UID: 502
@@ -499,6 +510,7 @@ services:
 
   vttablet_popularrank_shard2_backup:
     <<: *vttablet-base
+    profiles: [backup]
     environment:
       <<: *vttablet-env-base
       TABLET_UID: 1002
@@ -527,6 +539,7 @@ services:
 
   vttablet_popularrank_shard3_backup:
     <<: *vttablet-base
+    profiles: [backup]
     environment:
       <<: *vttablet-env-base
       TABLET_UID: 1012
