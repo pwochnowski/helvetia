@@ -4,7 +4,7 @@ global:
   smtp_from: 'alerts@helvetia.local'
   smtp_require_tls: true
   smtp_auth_username: 'thomas0299@gmail.com'
-  smtp_auth_password: 'fkpcjvshdpeswmkn'
+  smtp_auth_password: 'PASSWORD'  # Use an app password for Gmail
 
 route:
   receiver: team-email
