@@ -3,7 +3,7 @@ groups:
     interval: 1m
     rules:
       - alert: TabletHighQPS
-        expr: sum by (instance) (increase(vttablet_query_counts[1m])) > 1
+        expr: sum by (instance) (increase(vttablet_query_counts[1m])) > 100
         for: 1m
         labels:
           severity: warning
@@ -14,7 +14,7 @@ groups:
         expr: (
           sum by (instance) (rate(vttablet_query_error_counts[5m]))
           /
-          sum by (instance) (rate(vttablet_query_counts[5m]))) * 100 > 0.5
+          sum by (instance) (rate(vttablet_query_counts[5m]))) * 100 > 0.9
         for: 1m
         labels:
           severity: warning
@@ -22,7 +22,7 @@ groups:
           summary: "High error rate on {{ $labels.instance }}"
 
       - alert: TabletHighProcessCPU
-        expr: rate(process_cpu_seconds_total{job="vttablets"}[1m]) > 0.1
+        expr: rate(process_cpu_seconds_total{job="vttablets"}[1m]) > 0.9
         for: 1m
         labels:
           severity: critical
