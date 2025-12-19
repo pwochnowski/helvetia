@@ -17,7 +17,7 @@ VTGATE_PORT="15306"
 # Default counts
 USERS=10000
 ARTICLES=10000  
-READS=100000
+READS=50000
 
 # Parse arguments
 while [[ $# -gt 0 ]]; do
@@ -102,45 +102,6 @@ set_durability_policy() {
     echo "✓ Durability policy set to '$policy'"
 }
 
-# Function to pause vreplication (if configured)
-pause_vreplication() {
-    echo ""
-    echo "Pausing VReplication workflows (if any)..."
-    
-    # List and pause any active VReplication workflows
-    # This prevents replication lag during bulk inserts
-    for keyspace in user article read; do
-        workflows=$(vtctl Workflow -- --keyspace=$keyspace listall 2>/dev/null || echo "")
-        if [ -n "$workflows" ] && [ "$workflows" != "[]" ]; then
-            echo "  Pausing workflows in $keyspace: $workflows"
-            for wf in $workflows; do
-                vtctl Workflow -- --keyspace=$keyspace stop --workflow=$wf 2>/dev/null || true
-            done
-        fi
-    done
-    
-    echo "✓ VReplication paused (or none active)"
-}
-
-# Function to resume vreplication
-resume_vreplication() {
-    echo ""
-    echo "Resuming VReplication workflows..."
-    
-    for keyspace in user article read; do
-        workflows=$(vtctl Workflow -- --keyspace=$keyspace listall 2>/dev/null || echo "")
-        if [ -n "$workflows" ] && [ "$workflows" != "[]" ]; then
-            echo "  Resuming workflows in $keyspace: $workflows"
-            for wf in $workflows; do
-                vtctl Workflow -- --keyspace=$keyspace start --workflow=$wf 2>/dev/null || true
-            done
-        fi
-    done
-    
-    echo "✓ VReplication resumed"
-}
-
-
 # Function to run the bulk insert
 run_bulk_insert() {
     echo ""
@@ -175,21 +136,7 @@ verify_counts() {
 # Main execution
 main() {
     check_vitess
-    
-    echo ""
-    echo "This script will:"
-    echo "  1. Set keyspace durability policy to 'none' (faster writes)"
-    echo "  2. Run bulk insert with optimizations"
-    echo "  3. Restore keyspace durability policy to 'semi_sync'"
-    echo ""
-    read -p "Continue? (y/N) " -n 1 -r
-    echo
-    
-    if [[ ! $REPLY =~ ^[Yy]$ ]]; then
-        echo "Aborted."
-        exit 0
-    fi
-    
+
     # Set durability to none for faster writes
     set_durability_policy "none"
     
