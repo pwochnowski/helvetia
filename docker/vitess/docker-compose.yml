@@ -4,13 +4,6 @@
 #   Cell1 (Beijing/DBMS1): User(Beijing), Article(science), Read, Be-Read(science), Popular-Rank(daily)
 #   Cell2 (HongKong/DBMS2): User(HongKong), Article(science+technology), Read, Be-Read(science+technology), Popular-Rank(weekly/monthly)
 #
-# VReplication handles Article and Be-Read (science category) replication between cells
-#
-# VTGate per Zone:
-#   vtgate_cell1 (port 15306): Primary affinity to cell1, serves Beijing region apps
-#   vtgate_cell2 (port 15307): Primary affinity to cell2, serves HongKong region apps
-#   Each VTGate can still route cross-cell for writes to PRIMARY tablets
-
 # ===========================================
 # YAML Anchors for tablet definitions
 # ===========================================
@@ -32,6 +25,7 @@ x-vttablet-base: &vttablet-base
   image: vitess/lite:v23.0.0
   volumes:
     - .:/script
+    - vitess_backups:/vt/vtdataroot/backups
   networks:
     - vitess_net
 
@@ -631,3 +625,6 @@ services:
 networks:
   vitess_net:
     driver: bridge
+
+volumes:
+  vitess_backups:
