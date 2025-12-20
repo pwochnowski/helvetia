@@ -29,7 +29,7 @@ fi
 
 # Get counts
 IMAGE_COUNT=$(ls "$LOCAL_DATA_DIR/image"/*.jpg 2>/dev/null | wc -l | tr -d ' ')
-VIDEO_FILES=("video1.flv" "video2.flv")
+VIDEO_FILES=("video1.mp4" "video2.mp4")
 TEXT_CATEGORIES=("business" "entertainment" "sport" "tech")
 
 echo "Found $IMAGE_COUNT images"
@@ -85,7 +85,7 @@ for i in $(seq 0 $((ARTICLES_NUM - 1))); do
     # First 50 articles get a video
     if [ $i -lt $VIDEOS_NUM ]; then
         VIDEO_IDX=$(( i % ${#VIDEO_FILES[@]} ))
-        cp "$LOCAL_DATA_DIR/video/${VIDEO_FILES[$VIDEO_IDX]}" "$ARTICLE_DIR/video.flv"
+        cp "$LOCAL_DATA_DIR/video/${VIDEO_FILES[$VIDEO_IDX]}" "$ARTICLE_DIR/video.mp4"
     fi
 done
 

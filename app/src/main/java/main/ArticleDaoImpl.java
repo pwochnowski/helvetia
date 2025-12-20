@@ -14,6 +14,13 @@ public class ArticleDaoImpl implements ArticleDao {
     private final DB db;
     private final Gson gson = new Gson();
     
+    // WebHDFS base URL for generating download links
+    // Format: http://<namenode>:<port>/webhdfs/v1
+    private static final String WEBHDFS_BASE_URL = System.getenv().getOrDefault(
+        "WEBHDFS_BASE_URL", 
+        "http://localhost:9870/webhdfs/v1"
+    );
+    
     // RSQL to SQL converter with allowed columns
     private final RsqlToSql rsqlConverter = new RsqlToSql(Set.of(
         "id", "timestamp", "aid", "title", "category", "abstract", "language"
@@ -51,17 +58,40 @@ public class ArticleDaoImpl implements ArticleDao {
                 .setLanguage(nullToEmpty(rs.getString("language")))
                 .setText(nullToEmpty(rs.getString("text")));
         
-        // Handle binary fields - only if they exist and are not null
-        byte[] image = rs.getBytes("image");
-        if (image != null) {
-//            builder.setImage(com.google.protobuf.ByteString.copyFrom(image));
+        // Handle HDFS file paths and generate download URLs
+        String textPath = rs.getString("textPath");
+        if (textPath != null && !textPath.isEmpty()) {
+            builder.setTextPath(textPath);
+            builder.setTextUrl(generateHdfsDownloadUrl(textPath));
         }
-        byte[] video = rs.getBytes("video");
-        if (video != null) {
-//            builder.setVideo(com.google.protobuf.ByteString.copyFrom(video));
+        
+        String imagePath = rs.getString("imagePath");
+        if (imagePath != null && !imagePath.isEmpty()) {
+            builder.setImagePath(imagePath);
+            builder.setImageUrl(generateHdfsDownloadUrl(imagePath));
+        }
+        
+        String videoPath = rs.getString("videoPath");
+        if (videoPath != null && !videoPath.isEmpty()) {
+            builder.setVideoPath(videoPath);
+            builder.setVideoUrl(generateHdfsDownloadUrl(videoPath));
         }
 
         return builder.build();
+    }
+    
+    /**
+     * Generate a WebHDFS download URL for an HDFS path.
+     * The URL uses the OPEN operation which redirects to the DataNode for streaming.
+     * @param hdfsPath The HDFS path (e.g., /articles/123/image.jpg)
+     * @return WebHDFS URL for downloading the file
+     */
+    private String generateHdfsDownloadUrl(String hdfsPath) {
+        // Ensure path starts with /
+        if (!hdfsPath.startsWith("/")) {
+            hdfsPath = "/" + hdfsPath;
+        }
+        return WEBHDFS_BASE_URL + hdfsPath + "?op=OPEN";
     }
 
     /** Convert null to empty string for protobuf string fields */
@@ -72,8 +102,8 @@ public class ArticleDaoImpl implements ArticleDao {
     @Override
     public void create(Article a) throws Exception {
         String sql = """
-            INSERT INTO article_keyspace.article (id, timestamp, aid, title, category, abstract, articleTags, authors, language, text, image, video)
-            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+            INSERT INTO article_keyspace.article (id, timestamp, aid, title, category, abstract, articleTags, authors, language, text, textPath, imagePath, videoPath)
+            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
         """;
 
         try (Connection conn = db.getConnection();
@@ -86,7 +116,7 @@ public class ArticleDaoImpl implements ArticleDao {
 
     @Override
     public Article get(long id) throws Exception {
-        String sql = "SELECT id, timestamp, aid, title, category, abstract, articleTags, authors, language, text, image, video FROM article_keyspace.article WHERE id = ?";
+        String sql = "SELECT id, timestamp, aid, title, category, abstract, articleTags, authors, language, text, textPath, imagePath, videoPath FROM article_keyspace.article WHERE id = ?";
 
         try (Connection conn = db.getConnection();
              PreparedStatement st = conn.prepareStatement(sql)) {
@@ -129,8 +159,9 @@ public class ArticleDaoImpl implements ArticleDao {
         st.setString(i++, gson.toJson(a.getAuthorsList()));
         st.setString(i++, emptyToNull(a.getLanguage()));
         st.setString(i++, emptyToNull(a.getText()));
-        st.setBytes(i++, a.getImage().isEmpty() ? null : a.getImage().toByteArray());
-        st.setBytes(i++, a.getVideo().isEmpty() ? null : a.getVideo().toByteArray());
+        st.setString(i++, emptyToNull(a.getTextPath()));
+        st.setString(i++, emptyToNull(a.getImagePath()));
+        st.setString(i++, emptyToNull(a.getVideoPath()));
     }
 
     /** Convert empty strings to null for nullable DB columns */
@@ -162,8 +193,8 @@ public class ArticleDaoImpl implements ArticleDao {
     
     @Override
     public List<Article> list(String rsqlFilter, int limit, int offset, String sortBy, String sortDir) throws Exception {
-        // Base query - exclude large binary fields for list view
-        String baseSql = "SELECT id, timestamp, aid, title, category, abstract, articleTags, authors, language, text, image, video FROM article_keyspace.article";
+        // Base query with HDFS path fields
+        String baseSql = "SELECT id, timestamp, aid, title, category, abstract, articleTags, authors, language, text, textPath, imagePath, videoPath FROM article_keyspace.article";
         
         // Convert RSQL to SQL WHERE clause
         RsqlToSql.SqlResult filterResult = rsqlConverter.convert(rsqlFilter);

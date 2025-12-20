@@ -44,6 +44,12 @@ USER_BATCH_SIZE = 2000
 ARTICLE_BATCH_SIZE = 1000
 READ_BATCH_SIZE = 2000
 
+# HDFS file settings
+# Articles with videos (first N articles get videos)
+ARTICLES_WITH_VIDEO = 50
+# Number of images per article (1-3 random)
+MAX_IMAGES_PER_ARTICLE = 3
+
 # Probability distributions (from original script)
 REGIONS = ["Beijing", "HongKong"]  # Match schema: no space in HongKong
 REGION_WEIGHTS = [0.6, 0.4]  # Beijing: 60%, HongKong: 40%
@@ -114,23 +120,60 @@ def gen_user(i: int, base_time: datetime) -> Dict[str, Any]:
     }
 
 
+def get_article_category(i: int) -> str:
+    """Get deterministic category for article index.
+    Uses same hash as HDFS loader: science 45%, technology 55%
+    """
+    hash_val = (i * 31 + 17) % 100
+    return "science" if hash_val < 45 else "technology"
+
+
+def get_text_category(i: int) -> str:
+    """Get text file category matching article category.
+    science -> tech (BBC tech category)
+    technology -> business/entertainment/sport
+    """
+    hash_val = (i * 31 + 17) % 100
+    if hash_val < 45:
+        # science articles use tech texts
+        return "tech"
+    else:
+        # technology articles use business/entertainment/sport
+        sub_hash = (i * 37 + 13) % 3
+        return ["business", "entertainment", "sport"][sub_hash]
+
+
 def gen_article(i: int, base_time: datetime, articles_count: int = ARTICLES_NUM) -> Dict[str, Any]:
     """Generate a single article record matching the schema."""
-    category = random.choices(CATEGORIES, CATEGORY_WEIGHTS)[0]
+    # Use deterministic category based on index (matching HDFS loader)
+    category = get_article_category(i)
     language = random.choices(LANGUAGES, LANGUAGE_WEIGHTS_ARTICLE)[0]
     aid = f"a{i}"
     
     # Store for read generation
     aid_to_language[aid] = language
     
+    # Get matching text category for sensible content
+    text_cat = get_text_category(i)
+    
     # Generate placeholder text (in production, you'd load real content)
-    abstract = f"Abstract for article {i}: A comprehensive overview of the topic."
-    text = f"Full text content for article {i}. " * 50  # ~300 words placeholder
+    abstract = f"Abstract for article {i}: A comprehensive overview of {category} topics."
+    text = f"Full text content for article {i} in category {category} (text from {text_cat}). " * 50
     
     # Spread articles over 1 year (365 days)
     days_spread = 365
     day_offset = int((i / articles_count) * days_spread)
     article_time = base_time + timedelta(days=day_offset, hours=random.randint(0, 23), minutes=random.randint(0, 59))
+    
+    # HDFS paths for media files (matching load-articles.sh structure)
+    # Text file path
+    text_path = f"/articles/article{i}/text.txt"
+    
+    # Image path (one image per article)
+    image_path = f"/articles/article{i}/image.jpg"
+    
+    # Video path (only first ARTICLES_WITH_VIDEO articles have videos)
+    video_path = f"/articles/article{i}/video.mp4" if i < ARTICLES_WITH_VIDEO else None
     
     return {
         "id": i + 1,  # Explicit ID for Vitess category vindex
@@ -143,8 +186,9 @@ def gen_article(i: int, base_time: datetime, articles_count: int = ARTICLES_NUM)
         "authors": json.dumps(random_authors()),
         "language": language,
         "text": text,
-        "image": None,  # Skip binary data for bulk insert
-        "video": None,  # Skip binary data for bulk insert
+        "textPath": text_path,
+        "imagePath": image_path,
+        "videoPath": video_path,
     }
 
 
@@ -240,14 +284,14 @@ def bulk_insert_articles(cursor, articles: List[Dict]) -> int:
     sql = """
         INSERT INTO `article`
         (`id`, `aid`, `timestamp`, `title`, `category`, `abstract`, `articleTags`,
-         `authors`, `language`, `text`, `image`, `video`)
-        VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)
+         `authors`, `language`, `text`, `textPath`, `imagePath`, `videoPath`)
+        VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)
     """
     
     values = [
         (a["id"], a["aid"], a["timestamp"], a["title"], a["category"], a["abstract"],
          a["articleTags"], a["authors"], a["language"], a["text"],
-         a["image"], a["video"])
+         a["textPath"], a["imagePath"], a["videoPath"])
         for a in articles
     ]
     
