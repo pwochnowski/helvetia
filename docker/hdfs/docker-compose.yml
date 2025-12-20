@@ -1,0 +1,74 @@
+version: '3.8'
+
+services:
+  namenode:
+    image: apache/hadoop:3
+    hostname: namenode
+    container_name: hdfs-namenode
+    user: root
+    command: ["bash", "-c", "mkdir -p /opt/hadoop/dfs/name && chown -R hadoop:hadoop /opt/hadoop/dfs && su hadoop -c 'if [ ! -d /opt/hadoop/dfs/name/current ]; then hdfs namenode -format -force; fi && hdfs namenode'"]
+    ports:
+      - "9870:9870"   # WebHDFS REST API / NameNode Web UI
+      - "9000:9000"   # HDFS RPC port
+    env_file:
+      - ./hadoop.env
+    volumes:
+      - namenode_data:/opt/hadoop/dfs/name
+      - ./scripts:/scripts
+      # Mount db_gen for initial data load
+      - ../../tools/db_gen:/data/db_gen:ro
+      # Mount staging directory for fast uploads (prepared locally)
+      - ./staging:/staging:ro
+    networks:
+      - hdfs-network
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:9870/"]
+      interval: 30s
+      timeout: 10s
+      retries: 5
+      start_period: 60s
+
+  datanode1:
+    image: apache/hadoop:3
+    hostname: datanode1
+    container_name: hdfs-datanode1
+    user: root
+    command: ["bash", "-c", "mkdir -p /opt/hadoop/dfs/data && chown -R hadoop:hadoop /opt/hadoop/dfs && su hadoop -c 'hdfs datanode'"]
+    ports:
+      - "9864:9864"   # DataNode Web UI
+    env_file:
+      - ./hadoop.env
+    volumes:
+      - datanode1_data:/opt/hadoop/dfs/data
+    networks:
+      - hdfs-network
+    depends_on:
+      namenode:
+        condition: service_healthy
+
+  datanode2:
+    image: apache/hadoop:3
+    hostname: datanode2
+    container_name: hdfs-datanode2
+    user: root
+    command: ["bash", "-c", "mkdir -p /opt/hadoop/dfs/data && chown -R hadoop:hadoop /opt/hadoop/dfs && su hadoop -c 'hdfs datanode'"]
+    ports:
+      - "9865:9864"   # DataNode Web UI (different host port)
+    env_file:
+      - ./hadoop.env
+    volumes:
+      - datanode2_data:/opt/hadoop/dfs/data
+    networks:
+      - hdfs-network
+    depends_on:
+      namenode:
+        condition: service_healthy
+
+volumes:
+  namenode_data:
+  datanode1_data:
+  datanode2_data:
+
+networks:
+  hdfs-network:
+    driver: bridge
