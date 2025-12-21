@@ -119,6 +119,27 @@ run_bulk_insert() {
         --truncate
 }
 
+# Function to populate derived tables (beread and popularrank)
+populate_derived_tables() {
+    echo ""
+    echo "=============================================="
+    echo "Populating BeRead Table"
+    echo "=============================================="
+    
+    uv run "${SCRIPT_DIR}/populate_beread.py" \
+        --host "$VTGATE_HOST" \
+        --port "$VTGATE_PORT"
+    
+    echo ""
+    echo "=============================================="
+    echo "Populating PopularRank Table"
+    echo "=============================================="
+    
+    uv run "${SCRIPT_DIR}/populate_popularrank.py" \
+        --host "$VTGATE_HOST" \
+        --port "$VTGATE_PORT"
+}
+
 # Function to verify insert counts
 verify_counts() {
     echo ""
@@ -138,13 +159,16 @@ main() {
     check_vitess
 
     # Set durability to none for faster writes
-    set_durability_policy "none"
+    # set_durability_policy "none"
     
     # Run the bulk insert
     run_bulk_insert
     
+    # Populate derived tables
+    populate_derived_tables
+    
     # Restore durability policy
-    set_durability_policy "semi_sync"
+    # set_durability_policy "semi_sync"
     
     # Verify
     verify_counts
