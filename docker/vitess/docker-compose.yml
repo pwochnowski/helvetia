@@ -635,6 +635,20 @@ services:
     networks:
       - vitess_net
 
+  cadvisor:
+    image: ghcr.io/google/cadvisor:latest
+    container_name: vitess-cadvisor
+    privileged: true
+    volumes:
+      - /:/rootfs:ro
+      - /sys:/sys:ro
+      - /var/run/docker.sock.raw:/var/run/docker.sock:rw
+      - /run/containerd/containerd.sock:/run/containerd/containerd.sock:rw
+    ports:
+      - 9418:8080
+    networks:
+      - vitess_net
+
   grafana:
     image: grafana/grafana:10.2.3
     container_name: vitess-grafana

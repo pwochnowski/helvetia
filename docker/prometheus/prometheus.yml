@@ -3,11 +3,102 @@ global:
   evaluation_interval: 5s
 
 scrape_configs:
-  # Docker Engine built-in metrics (replaces cAdvisor)
-  # Metrics endpoint enabled via daemon.json in Colima VM
-  - job_name: docker
+  # cAdvisor - Container metrics (CPU, memory, network, disk)
+  - job_name: cadvisor
     static_configs:
-      - targets: ['host.docker.internal:9323']
+      - targets: ['cadvisor:8080']
+    relabel_configs:
+      # Extract container name from the full name label
+      - source_labels: [name]
+        target_label: container_name
+      # Extract service name from docker compose label
+      - source_labels: [container_label_com_docker_compose_service]
+        target_label: service
+    # metric_relabel_configs:
+    #   # Extract container name from the full name label
+    #   - source_labels: [name]
+    #     target_label: container_name
+    #   # Extract service name from docker compose label
+    #   - source_labels: [container_label_com_docker_compose_service]
+    #     target_label: service
+      
+    #   # === Container Group Classification ===
+    #   # Group: vttablet (broken down by keyspace)
+    #   - source_labels: [name]
+    #     regex: 'vitess-vttablet_([^_]+)_.*'
+    #     target_label: container_group
+    #     replacement: 'vttablet'
+    #   - source_labels: [name]
+    #     regex: 'vitess-vttablet_([^_]+)_.*'
+    #     target_label: keyspace
+    #     replacement: '${1}'
+    #   - source_labels: [name]
+    #     regex: 'vitess-vttablet_[^_]+_(shard[0-9]+)_.*'
+    #     target_label: shard
+    #     replacement: '${1}'
+    #   - source_labels: [name]
+    #     regex: 'vitess-vttablet_[^_]+_shard[0-9]+_([^-]+)-.*'
+    #     target_label: role
+    #     replacement: '${1}'
+    #   # Clean display name for vttablets: "article shard1 primary"
+    #   - source_labels: [name]
+    #     regex: 'vitess-vttablet_([^_]+)_(shard[0-9]+)_([^-]+)-.*'
+    #     target_label: display_name
+    #     replacement: '${1} ${2} ${3}'
+      
+    #   # Group: vtgate
+    #   - source_labels: [name]
+    #     regex: 'vitess-vtgate.*'
+    #     target_label: container_group
+    #     replacement: 'vtgate'
+    #   - source_labels: [name]
+    #     regex: 'vitess-vtgate_(cell[0-9]+)-.*'
+    #     target_label: cell
+    #     replacement: '${1}'
+    #   - source_labels: [name]
+    #     regex: 'vitess-vtgate_(cell[0-9]+)-.*'
+    #     target_label: display_name
+    #     replacement: 'vtgate ${1}'
+      
+    #   # Group: vtt_control (vtctld, vtorc, vtadmin)
+    #   - source_labels: [name]
+    #     regex: 'vitess-(vtctld|vtorc|vtadmin).*'
+    #     target_label: container_group
+    #     replacement: 'vtt_control'
+    #   - source_labels: [name]
+    #     regex: 'vitess-(vtctld)-.*'
+    #     target_label: display_name
+    #     replacement: 'vtctld'
+    #   - source_labels: [name]
+    #     regex: 'vitess-(vtorc)-.*'
+    #     target_label: display_name
+    #     replacement: 'vtorc'
+    #   - source_labels: [name]
+    #     regex: 'vitess-vtadmin-(api|web)-.*'
+    #     target_label: display_name
+    #     replacement: 'vtadmin-${1}'
+      
+    #   # Group: infrastructure (everything else)
+    #   - source_labels: [name, container_group]
+    #     regex: 'vitess-(prometheus|grafana|cadvisor|consul).*;'
+    #     target_label: container_group
+    #     replacement: 'infrastructure'
+    #   - source_labels: [name]
+    #     regex: 'vitess-(prometheus)-.*'
+    #     target_label: display_name
+    #     replacement: 'prometheus'
+    #   - source_labels: [name]
+    #     regex: 'vitess-(grafana)-.*'
+      #   target_label: display_name
+      #   replacement: 'grafana'
+      # - source_labels: [name]
+      #   regex: 'vitess-(cadvisor)-.*'
+      #   target_label: display_name
+      #   replacement: 'cadvisor'
+      # - source_labels: [name]
+      #   regex: 'vitess-(consul[0-9]*)-.*'
+      #   target_label: display_name
+      #   replacement: '${1}'
 
   # VTGate metrics - query routing layer
   - job_name: vtgate
