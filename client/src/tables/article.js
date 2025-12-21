@@ -19,6 +19,11 @@ export const columnDefs = [
         editable: false,
         filter: 'agTextColumnFilter',
         sortable: true,
+        cellRenderer: params => {
+            if (!params.value) return '';
+            const aid = params.value;
+            return `<a href="#" class="article-id-link" onclick="event.preventDefault(); window.showArticlePopup('${aid}')">${aid}</a>`;
+        },
     },
     { 
         field: 'title', 

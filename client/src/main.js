@@ -3,6 +3,7 @@ import 'ag-grid-community/styles/ag-grid.css';
 import 'ag-grid-community/styles/ag-theme-alpine.css';
 import { fetchData, updateData, tableConfigs, setServer, getCurrentServer } from './api.js';
 import { filterModelToRsql, parseRsqlForDisplay } from './rsql.js';
+import './articlePopup.js'; // Initialize article popup
 
 // Register AG Grid modules
 ModuleRegistry.registerModules([AllCommunityModule]);

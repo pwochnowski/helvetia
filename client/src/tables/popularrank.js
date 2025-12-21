@@ -31,15 +31,17 @@ export const columnDefs = [
     { 
         field: 'articleAidList', 
         headerName: 'Top Articles',
-        width: 300,
+        width: 400,
         editable: false,
         filter: 'agTextColumnFilter',
         sortable: false,
-        valueFormatter: params => {
-            if (Array.isArray(params.value)) {
-                return params.value.join(', ');
+        cellRenderer: params => {
+            if (!Array.isArray(params.value) || params.value.length === 0) {
+                return '';
             }
-            return params.value || '';
+            return params.value.map(aid => 
+                `<a href="#" class="article-id-link" onclick="event.preventDefault(); window.showArticlePopup('${aid}')">${aid}</a>`
+            ).join(', ');
         },
     },
     { 

@@ -16,6 +16,13 @@ export default defineConfig({
         changeOrigin: true,
         rewrite: (path) => path.replace(/^\/api\/cell2/, ''),
       },
+      // Proxy HDFS WebHDFS requests to avoid CORS issues
+      '/hdfs': {
+        target: 'http://localhost:9870',
+        changeOrigin: true,
+        rewrite: (path) => path.replace(/^\/hdfs/, '/webhdfs/v1'),
+        followRedirects: true,
+      },
     },
   },
 });
