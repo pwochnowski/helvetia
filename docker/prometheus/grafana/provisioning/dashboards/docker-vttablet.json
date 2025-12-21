@@ -1,0 +1,283 @@
+{
+  "annotations": { "list": [] },
+  "editable": true,
+  "fiscalYearStartMonth": 0,
+  "graphTooltip": 1,
+  "id": null,
+  "links": [],
+  "templating": {
+    "list": [
+      {
+        "current": { "selected": true, "text": "All", "value": "$__all" },
+        "datasource": { "type": "prometheus", "uid": "prometheus" },
+        "definition": "label_values(container_cpu_usage_seconds_total{container_group=\"vttablet\"}, keyspace)",
+        "hide": 0,
+        "includeAll": true,
+        "label": "Keyspace",
+        "multi": true,
+        "name": "keyspace",
+        "options": [],
+        "query": { "query": "label_values(container_cpu_usage_seconds_total{container_group=\"vttablet\"}, keyspace)", "refId": "StandardVariableQuery" },
+        "refresh": 1,
+        "regex": "",
+        "skipUrlSync": false,
+        "sort": 1,
+        "type": "query"
+      },
+      {
+        "current": { "selected": true, "text": "All", "value": "$__all" },
+        "datasource": { "type": "prometheus", "uid": "prometheus" },
+        "definition": "label_values(container_cpu_usage_seconds_total{container_group=\"vttablet\"}, shard)",
+        "hide": 0,
+        "includeAll": true,
+        "label": "Shard",
+        "multi": true,
+        "name": "shard",
+        "options": [],
+        "query": { "query": "label_values(container_cpu_usage_seconds_total{container_group=\"vttablet\"}, shard)", "refId": "StandardVariableQuery" },
+        "refresh": 1,
+        "regex": "",
+        "skipUrlSync": false,
+        "sort": 1,
+        "type": "query"
+      },
+      {
+        "current": { "selected": true, "text": "All", "value": "$__all" },
+        "datasource": { "type": "prometheus", "uid": "prometheus" },
+        "definition": "label_values(container_cpu_usage_seconds_total{container_group=\"vttablet\"}, role)",
+        "hide": 0,
+        "includeAll": true,
+        "label": "Role",
+        "multi": true,
+        "name": "role",
+        "options": [],
+        "query": { "query": "label_values(container_cpu_usage_seconds_total{container_group=\"vttablet\"}, role)", "refId": "StandardVariableQuery" },
+        "refresh": 1,
+        "regex": "",
+        "skipUrlSync": false,
+        "sort": 1,
+        "type": "query"
+      }
+    ]
+  },
+  "panels": [
+    {
+      "datasource": { "type": "prometheus", "uid": "prometheus" },
+      "fieldConfig": {
+        "defaults": {
+          "color": { "mode": "palette-classic" },
+          "custom": {
+            "axisCenteredZero": false, "axisColorMode": "text", "axisLabel": "", "axisPlacement": "auto",
+            "barAlignment": 0, "drawStyle": "line", "fillOpacity": 20, "gradientMode": "none",
+            "hideFrom": { "legend": false, "tooltip": false, "viz": false },
+            "lineInterpolation": "smooth", "lineWidth": 2, "pointSize": 5,
+            "scaleDistribution": { "type": "linear" }, "showPoints": "never", "spanNulls": false,
+            "stacking": { "group": "A", "mode": "none" }, "thresholdsStyle": { "mode": "off" }
+          },
+          "mappings": [],
+          "thresholds": { "mode": "absolute", "steps": [{ "color": "green", "value": null }, { "color": "red", "value": 80 }] },
+          "unit": "percent"
+        },
+        "overrides": []
+      },
+      "gridPos": { "h": 8, "w": 12, "x": 0, "y": 0 },
+      "id": 1,
+      "options": {
+        "legend": { "calcs": ["mean", "max"], "displayMode": "table", "placement": "right", "showLegend": true },
+        "tooltip": { "mode": "multi", "sort": "desc" }
+      },
+      "targets": [{
+        "datasource": { "type": "prometheus", "uid": "prometheus" },
+        "editorMode": "code",
+        "expr": "sum by (keyspace, shard, role) (rate(container_cpu_usage_seconds_total{container_group=\"vttablet\", keyspace=~\"$keyspace\", shard=~\"$shard\", role=~\"$role\"}[1m])) * 100",
+        "legendFormat": "{{keyspace}} {{shard}} {{role}}",
+        "range": true,
+        "refId": "A"
+      }],
+      "title": "VTTablet CPU Usage (%)",
+      "type": "timeseries"
+    },
+    {
+      "datasource": { "type": "prometheus", "uid": "prometheus" },
+      "fieldConfig": {
+        "defaults": {
+          "color": { "mode": "palette-classic" },
+          "custom": {
+            "axisCenteredZero": false, "axisColorMode": "text", "axisLabel": "", "axisPlacement": "auto",
+            "barAlignment": 0, "drawStyle": "line", "fillOpacity": 20, "gradientMode": "none",
+            "hideFrom": { "legend": false, "tooltip": false, "viz": false },
+            "lineInterpolation": "smooth", "lineWidth": 2, "pointSize": 5,
+            "scaleDistribution": { "type": "linear" }, "showPoints": "never", "spanNulls": false,
+            "stacking": { "group": "A", "mode": "none" }, "thresholdsStyle": { "mode": "off" }
+          },
+          "mappings": [],
+          "thresholds": { "mode": "absolute", "steps": [{ "color": "green", "value": null }, { "color": "red", "value": 80 }] },
+          "unit": "bytes"
+        },
+        "overrides": []
+      },
+      "gridPos": { "h": 8, "w": 12, "x": 12, "y": 0 },
+      "id": 2,
+      "options": {
+        "legend": { "calcs": ["mean", "max"], "displayMode": "table", "placement": "right", "showLegend": true },
+        "tooltip": { "mode": "multi", "sort": "desc" }
+      },
+      "targets": [{
+        "datasource": { "type": "prometheus", "uid": "prometheus" },
+        "editorMode": "code",
+        "expr": "container_memory_usage_bytes{container_group=\"vttablet\", keyspace=~\"$keyspace\", shard=~\"$shard\", role=~\"$role\"}",
+        "legendFormat": "{{keyspace}} {{shard}} {{role}}",
+        "range": true,
+        "refId": "A"
+      }],
+      "title": "VTTablet Memory Usage",
+      "type": "timeseries"
+    },
+    {
+      "datasource": { "type": "prometheus", "uid": "prometheus" },
+      "fieldConfig": {
+        "defaults": {
+          "color": { "mode": "thresholds" },
+          "mappings": [],
+          "thresholds": { "mode": "absolute", "steps": [{ "color": "green", "value": null }, { "color": "#EAB839", "value": 50 }, { "color": "red", "value": 80 }] },
+          "unit": "percent"
+        },
+        "overrides": []
+      },
+      "gridPos": { "h": 6, "w": 24, "x": 0, "y": 8 },
+      "id": 3,
+      "options": {
+        "displayMode": "gradient", "minVizHeight": 10, "minVizWidth": 0, "orientation": "horizontal",
+        "reduceOptions": { "calcs": ["lastNotNull"], "fields": "", "values": false }, "showUnfilled": true
+      },
+      "pluginVersion": "10.2.3",
+      "targets": [{
+        "datasource": { "type": "prometheus", "uid": "prometheus" },
+        "editorMode": "code",
+        "expr": "sum by (keyspace, shard, role) (rate(container_cpu_usage_seconds_total{container_group=\"vttablet\", keyspace=~\"$keyspace\", shard=~\"$shard\", role=~\"$role\"}[1m])) * 100",
+        "legendFormat": "{{keyspace}} {{shard}} {{role}}",
+        "range": true,
+        "refId": "A"
+      }],
+      "title": "Current CPU by Tablet",
+      "type": "bargauge"
+    },
+    {
+      "datasource": { "type": "prometheus", "uid": "prometheus" },
+      "fieldConfig": {
+        "defaults": {
+          "color": { "mode": "thresholds" },
+          "mappings": [],
+          "thresholds": { "mode": "absolute", "steps": [{ "color": "green", "value": null }, { "color": "#EAB839", "value": 536870912 }, { "color": "red", "value": 1073741824 }] },
+          "unit": "bytes"
+        },
+        "overrides": []
+      },
+      "gridPos": { "h": 6, "w": 24, "x": 0, "y": 14 },
+      "id": 4,
+      "options": {
+        "displayMode": "gradient", "minVizHeight": 10, "minVizWidth": 0, "orientation": "horizontal",
+        "reduceOptions": { "calcs": ["lastNotNull"], "fields": "", "values": false }, "showUnfilled": true
+      },
+      "pluginVersion": "10.2.3",
+      "targets": [{
+        "datasource": { "type": "prometheus", "uid": "prometheus" },
+        "editorMode": "code",
+        "expr": "container_memory_usage_bytes{container_group=\"vttablet\", keyspace=~\"$keyspace\", shard=~\"$shard\", role=~\"$role\"}",
+        "legendFormat": "{{keyspace}} {{shard}} {{role}}",
+        "range": true,
+        "refId": "A"
+      }],
+      "title": "Current Memory by Tablet",
+      "type": "bargauge"
+    },
+    {
+      "datasource": { "type": "prometheus", "uid": "prometheus" },
+      "fieldConfig": {
+        "defaults": {
+          "color": { "mode": "palette-classic" },
+          "custom": {
+            "axisCenteredZero": false, "axisColorMode": "text", "axisLabel": "", "axisPlacement": "auto",
+            "barAlignment": 0, "drawStyle": "line", "fillOpacity": 20, "gradientMode": "none",
+            "hideFrom": { "legend": false, "tooltip": false, "viz": false },
+            "lineInterpolation": "smooth", "lineWidth": 2, "pointSize": 5,
+            "scaleDistribution": { "type": "linear" }, "showPoints": "never", "spanNulls": false,
+            "stacking": { "group": "A", "mode": "none" }, "thresholdsStyle": { "mode": "off" }
+          },
+          "mappings": [],
+          "thresholds": { "mode": "absolute", "steps": [{ "color": "green", "value": null }] },
+          "unit": "Bps"
+        },
+        "overrides": []
+      },
+      "gridPos": { "h": 8, "w": 12, "x": 0, "y": 20 },
+      "id": 5,
+      "options": {
+        "legend": { "calcs": ["mean", "max"], "displayMode": "table", "placement": "right", "showLegend": true },
+        "tooltip": { "mode": "multi", "sort": "desc" }
+      },
+      "targets": [
+        {
+          "datasource": { "type": "prometheus", "uid": "prometheus" },
+          "editorMode": "code",
+          "expr": "sum by (keyspace) (rate(container_network_receive_bytes_total{container_group=\"vttablet\", keyspace=~\"$keyspace\", shard=~\"$shard\", role=~\"$role\"}[1m]))",
+          "legendFormat": "{{keyspace}} RX",
+          "range": true,
+          "refId": "A"
+        },
+        {
+          "datasource": { "type": "prometheus", "uid": "prometheus" },
+          "editorMode": "code",
+          "expr": "sum by (keyspace) (rate(container_network_transmit_bytes_total{container_group=\"vttablet\", keyspace=~\"$keyspace\", shard=~\"$shard\", role=~\"$role\"}[1m]))",
+          "legendFormat": "{{keyspace}} TX",
+          "range": true,
+          "refId": "B"
+        }
+      ],
+      "title": "Network I/O by Keyspace",
+      "type": "timeseries"
+    },
+    {
+      "datasource": { "type": "prometheus", "uid": "prometheus" },
+      "fieldConfig": {
+        "defaults": {
+          "color": { "mode": "palette-classic" },
+          "custom": { "hideFrom": { "legend": false, "tooltip": false, "viz": false } },
+          "mappings": [],
+          "unit": "bytes"
+        },
+        "overrides": []
+      },
+      "gridPos": { "h": 8, "w": 12, "x": 12, "y": 20 },
+      "id": 6,
+      "options": {
+        "legend": { "displayMode": "table", "placement": "right", "showLegend": true, "values": ["value", "percent"] },
+        "pieType": "donut",
+        "reduceOptions": { "calcs": ["lastNotNull"], "fields": "", "values": false },
+        "tooltip": { "mode": "multi", "sort": "desc" }
+      },
+      "pluginVersion": "10.2.3",
+      "targets": [{
+        "datasource": { "type": "prometheus", "uid": "prometheus" },
+        "editorMode": "code",
+        "expr": "sum by (keyspace) (container_memory_usage_bytes{container_group=\"vttablet\", keyspace=~\"$keyspace\", shard=~\"$shard\", role=~\"$role\"})",
+        "legendFormat": "{{keyspace}}",
+        "range": true,
+        "refId": "A"
+      }],
+      "title": "Memory Distribution by Keyspace",
+      "type": "piechart"
+    }
+  ],
+  "refresh": "5s",
+  "schemaVersion": 38,
+  "style": "dark",
+  "tags": ["docker", "containers", "vitess", "vttablet"],
+  "time": { "from": "now-15m", "to": "now" },
+  "timepicker": {},
+  "timezone": "",
+  "title": "Docker: VTTablets",
+  "uid": "docker-vttablet",
+  "version": 1,
+  "weekStart": ""
+}

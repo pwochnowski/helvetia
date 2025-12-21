@@ -7,13 +7,48 @@ scrape_configs:
   - job_name: cadvisor
     static_configs:
       - targets: ['cadvisor:8080']
-    relabel_configs:
-      # Extract container name from the full name label
+    metric_relabel_configs:
+      # === VTTablet labels ===
+      # Extract keyspace from: vitess-vttablet_article_shard1_primary-1
       - source_labels: [name]
-        target_label: container_name
-      # Extract service name from docker compose label
-      - source_labels: [container_label_com_docker_compose_service]
-        target_label: service
+        regex: 'vitess-vttablet_([^_]+)_.*'
+        target_label: keyspace
+        replacement: '${1}'
+      # Extract shard
+      - source_labels: [name]
+        regex: 'vitess-vttablet_[^_]+_(shard[0-9]+)_.*'
+        target_label: shard
+        replacement: '${1}'
+      # Extract role (primary/replica)
+      - source_labels: [name]
+        regex: 'vitess-vttablet_[^_]+_shard[0-9]+_([^-]+)-.*'
+        target_label: role
+        replacement: '${1}'
+      
+      # === VTGate labels ===
+      # Extract cell from: vitess-vtgate_cell1-1
+      - source_labels: [name]
+        regex: 'vitess-vtgate_(cell[0-9]+)-.*'
+        target_label: cell
+        replacement: '${1}'
+      
+      # === Container group classification ===
+      - source_labels: [name]
+        regex: 'vitess-vttablet_.*'
+        target_label: container_group
+        replacement: 'vttablet'
+      - source_labels: [name]
+        regex: 'vitess-vtgate_.*'
+        target_label: container_group
+        replacement: 'vtgate'
+      - source_labels: [name]
+        regex: 'vitess-(vtctld|vtorc|vtadmin).*'
+        target_label: container_group
+        replacement: 'vtt_control'
+      - source_labels: [name]
+        regex: 'vitess-(prometheus|grafana|cadvisor|consul).*'
+        target_label: container_group
+        replacement: 'infrastructure'
     # metric_relabel_configs:
     #   # Extract container name from the full name label
     #   - source_labels: [name]

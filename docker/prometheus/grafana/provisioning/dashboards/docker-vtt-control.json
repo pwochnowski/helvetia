@@ -1,0 +1,250 @@
+{
+  "annotations": { "list": [] },
+  "editable": true,
+  "fiscalYearStartMonth": 0,
+  "graphTooltip": 1,
+  "id": null,
+  "links": [],
+  "templating": {
+    "list": [
+      {
+        "current": { "selected": true, "text": "All", "value": "$__all" },
+        "datasource": { "type": "prometheus", "uid": "prometheus" },
+        "definition": "label_values(container_cpu_usage_seconds_total{container_group=\"vtt_control\"}, name)",
+        "hide": 0,
+        "includeAll": true,
+        "label": "Service",
+        "multi": true,
+        "name": "service",
+        "options": [],
+        "query": { "query": "label_values(container_cpu_usage_seconds_total{container_group=\"vtt_control\"}, name)", "refId": "StandardVariableQuery" },
+        "refresh": 1,
+        "regex": "/vitess-([^-]+).*/",
+        "skipUrlSync": false,
+        "sort": 1,
+        "type": "query"
+      }
+    ]
+  },
+  "panels": [
+    {
+      "datasource": { "type": "prometheus", "uid": "prometheus" },
+      "fieldConfig": {
+        "defaults": {
+          "color": { "mode": "palette-classic" },
+          "custom": {
+            "axisCenteredZero": false, "axisColorMode": "text", "axisLabel": "", "axisPlacement": "auto",
+            "barAlignment": 0, "drawStyle": "line", "fillOpacity": 20, "gradientMode": "none",
+            "hideFrom": { "legend": false, "tooltip": false, "viz": false },
+            "lineInterpolation": "smooth", "lineWidth": 2, "pointSize": 5,
+            "scaleDistribution": { "type": "linear" }, "showPoints": "never", "spanNulls": false,
+            "stacking": { "group": "A", "mode": "none" }, "thresholdsStyle": { "mode": "off" }
+          },
+          "mappings": [],
+          "thresholds": { "mode": "absolute", "steps": [{ "color": "green", "value": null }, { "color": "red", "value": 80 }] },
+          "unit": "percent"
+        },
+        "overrides": []
+      },
+      "gridPos": { "h": 8, "w": 12, "x": 0, "y": 0 },
+      "id": 1,
+      "options": {
+        "legend": { "calcs": ["mean", "max"], "displayMode": "table", "placement": "right", "showLegend": true },
+        "tooltip": { "mode": "multi", "sort": "desc" }
+      },
+      "targets": [{
+        "datasource": { "type": "prometheus", "uid": "prometheus" },
+        "editorMode": "code",
+        "expr": "sum by (name) (rate(container_cpu_usage_seconds_total{container_group=\"vtt_control\", name=~\".*$service.*\"}[1m])) * 100",
+        "legendFormat": "{{name}}",
+        "range": true,
+        "refId": "A"
+      }],
+      "title": "VTT Control CPU Usage (%)",
+      "transformations": [
+        {
+          "id": "renameByRegex",
+          "options": { "regex": "vitess-([^-]+).*", "renamePattern": "$1" }
+        }
+      ],
+      "type": "timeseries"
+    },
+    {
+      "datasource": { "type": "prometheus", "uid": "prometheus" },
+      "fieldConfig": {
+        "defaults": {
+          "color": { "mode": "palette-classic" },
+          "custom": {
+            "axisCenteredZero": false, "axisColorMode": "text", "axisLabel": "", "axisPlacement": "auto",
+            "barAlignment": 0, "drawStyle": "line", "fillOpacity": 20, "gradientMode": "none",
+            "hideFrom": { "legend": false, "tooltip": false, "viz": false },
+            "lineInterpolation": "smooth", "lineWidth": 2, "pointSize": 5,
+            "scaleDistribution": { "type": "linear" }, "showPoints": "never", "spanNulls": false,
+            "stacking": { "group": "A", "mode": "none" }, "thresholdsStyle": { "mode": "off" }
+          },
+          "mappings": [],
+          "thresholds": { "mode": "absolute", "steps": [{ "color": "green", "value": null }, { "color": "red", "value": 80 }] },
+          "unit": "bytes"
+        },
+        "overrides": []
+      },
+      "gridPos": { "h": 8, "w": 12, "x": 12, "y": 0 },
+      "id": 2,
+      "options": {
+        "legend": { "calcs": ["mean", "max"], "displayMode": "table", "placement": "right", "showLegend": true },
+        "tooltip": { "mode": "multi", "sort": "desc" }
+      },
+      "targets": [{
+        "datasource": { "type": "prometheus", "uid": "prometheus" },
+        "editorMode": "code",
+        "expr": "container_memory_usage_bytes{container_group=\"vtt_control\", name=~\".*$service.*\"}",
+        "legendFormat": "{{name}}",
+        "range": true,
+        "refId": "A"
+      }],
+      "title": "VTT Control Memory Usage",
+      "transformations": [
+        {
+          "id": "renameByRegex",
+          "options": { "regex": "vitess-([^-]+).*", "renamePattern": "$1" }
+        }
+      ],
+      "type": "timeseries"
+    },
+    {
+      "datasource": { "type": "prometheus", "uid": "prometheus" },
+      "fieldConfig": {
+        "defaults": {
+          "color": { "mode": "thresholds" },
+          "mappings": [],
+          "thresholds": { "mode": "absolute", "steps": [{ "color": "green", "value": null }, { "color": "#EAB839", "value": 50 }, { "color": "red", "value": 80 }] },
+          "unit": "percent"
+        },
+        "overrides": []
+      },
+      "gridPos": { "h": 5, "w": 12, "x": 0, "y": 8 },
+      "id": 3,
+      "options": {
+        "colorMode": "background", "graphMode": "area", "justifyMode": "auto", "orientation": "horizontal",
+        "reduceOptions": { "calcs": ["lastNotNull"], "fields": "", "values": false }, "textMode": "value_and_name"
+      },
+      "pluginVersion": "10.2.3",
+      "targets": [{
+        "datasource": { "type": "prometheus", "uid": "prometheus" },
+        "editorMode": "code",
+        "expr": "sum by (name) (rate(container_cpu_usage_seconds_total{container_group=\"vtt_control\", name=~\".*$service.*\"}[1m])) * 100",
+        "legendFormat": "{{name}}",
+        "instant": true,
+        "range": false,
+        "refId": "A"
+      }],
+      "title": "Current CPU",
+      "transformations": [
+        {
+          "id": "renameByRegex",
+          "options": { "regex": "vitess-([^-]+).*", "renamePattern": "$1" }
+        }
+      ],
+      "type": "stat"
+    },
+    {
+      "datasource": { "type": "prometheus", "uid": "prometheus" },
+      "fieldConfig": {
+        "defaults": {
+          "color": { "mode": "thresholds" },
+          "mappings": [],
+          "thresholds": { "mode": "absolute", "steps": [{ "color": "green", "value": null }, { "color": "#EAB839", "value": 134217728 }, { "color": "red", "value": 268435456 }] },
+          "unit": "bytes"
+        },
+        "overrides": []
+      },
+      "gridPos": { "h": 5, "w": 12, "x": 12, "y": 8 },
+      "id": 4,
+      "options": {
+        "colorMode": "background", "graphMode": "area", "justifyMode": "auto", "orientation": "horizontal",
+        "reduceOptions": { "calcs": ["lastNotNull"], "fields": "", "values": false }, "textMode": "value_and_name"
+      },
+      "pluginVersion": "10.2.3",
+      "targets": [{
+        "datasource": { "type": "prometheus", "uid": "prometheus" },
+        "editorMode": "code",
+        "expr": "container_memory_usage_bytes{container_group=\"vtt_control\", name=~\".*$service.*\"}",
+        "legendFormat": "{{name}}",
+        "instant": true,
+        "range": false,
+        "refId": "A"
+      }],
+      "title": "Current Memory",
+      "transformations": [
+        {
+          "id": "renameByRegex",
+          "options": { "regex": "vitess-([^-]+).*", "renamePattern": "$1" }
+        }
+      ],
+      "type": "stat"
+    },
+    {
+      "datasource": { "type": "prometheus", "uid": "prometheus" },
+      "fieldConfig": {
+        "defaults": {
+          "color": { "mode": "palette-classic" },
+          "custom": {
+            "axisCenteredZero": false, "axisColorMode": "text", "axisLabel": "", "axisPlacement": "auto",
+            "barAlignment": 0, "drawStyle": "line", "fillOpacity": 20, "gradientMode": "none",
+            "hideFrom": { "legend": false, "tooltip": false, "viz": false },
+            "lineInterpolation": "smooth", "lineWidth": 2, "pointSize": 5,
+            "scaleDistribution": { "type": "linear" }, "showPoints": "never", "spanNulls": false,
+            "stacking": { "group": "A", "mode": "none" }, "thresholdsStyle": { "mode": "off" }
+          },
+          "mappings": [],
+          "thresholds": { "mode": "absolute", "steps": [{ "color": "green", "value": null }] },
+          "unit": "Bps"
+        },
+        "overrides": []
+      },
+      "gridPos": { "h": 8, "w": 24, "x": 0, "y": 13 },
+      "id": 5,
+      "options": {
+        "legend": { "calcs": ["mean", "max"], "displayMode": "table", "placement": "right", "showLegend": true },
+        "tooltip": { "mode": "multi", "sort": "desc" }
+      },
+      "targets": [
+        {
+          "datasource": { "type": "prometheus", "uid": "prometheus" },
+          "editorMode": "code",
+          "expr": "sum by (name) (rate(container_network_receive_bytes_total{container_group=\"vtt_control\", name=~\".*$service.*\"}[1m]))",
+          "legendFormat": "{{name}} RX",
+          "range": true,
+          "refId": "A"
+        },
+        {
+          "datasource": { "type": "prometheus", "uid": "prometheus" },
+          "editorMode": "code",
+          "expr": "sum by (name) (rate(container_network_transmit_bytes_total{container_group=\"vtt_control\", name=~\".*$service.*\"}[1m]))",
+          "legendFormat": "{{name}} TX",
+          "range": true,
+          "refId": "B"
+        }
+      ],
+      "title": "Network I/O",
+      "transformations": [
+        {
+          "id": "renameByRegex",
+          "options": { "regex": "vitess-([^-]+).*", "renamePattern": "$1" }
+        }
+      ],
+      "type": "timeseries"
+    }
+  ],
+  "refresh": "5s",
+  "schemaVersion": 38,
+  "style": "dark",
+  "tags": ["docker", "containers", "vitess", "control"],
+  "time": { "from": "now-15m", "to": "now" },
+  "timepicker": {},
+  "timezone": "",
+  "title": "Docker: VTT Control",
+  "uid": "docker-vtt-control",
+  "version": 1,
+  "weekStart": ""
+}
