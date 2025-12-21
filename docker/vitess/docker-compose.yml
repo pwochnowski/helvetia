@@ -640,7 +640,6 @@ services:
     container_name: vitess-grafana
     depends_on:
       - prometheus
-      - cadvisor
     environment:
       - GF_SECURITY_ADMIN_USER=admin
       - GF_SECURITY_ADMIN_PASSWORD=admin

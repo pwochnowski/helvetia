@@ -3,10 +3,11 @@ global:
   evaluation_interval: 5s
 
 scrape_configs:
-  # cAdvisor - Docker container metrics
-  - job_name: cadvisor
+  # Docker Engine built-in metrics (replaces cAdvisor)
+  # Metrics endpoint enabled via daemon.json in Colima VM
+  - job_name: docker
     static_configs:
-      - targets: ['vitess-cadvisor:8080']
+      - targets: ['host.docker.internal:9323']
 
   # VTGate metrics - query routing layer
   - job_name: vtgate
