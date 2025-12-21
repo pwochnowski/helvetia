@@ -14,14 +14,20 @@ VITESS_DIR="${SCRIPT_DIR}/../docker/vitess"
 VTGATE_HOST="127.0.0.1"
 VTGATE_PORT="15306"
 
-# Default counts
-USERS=10000
-ARTICLES=10000  
-READS=50000
+# Default counts (small for quick testing)
+USERS=50
+ARTICLES=50  
+READS=250
 
 # Parse arguments
 while [[ $# -gt 0 ]]; do
     case $1 in
+        --standard)
+            USERS=10000
+            ARTICLES=10000
+            READS=50000
+            shift
+            ;;
         --users)
             USERS="$2"
             shift 2
@@ -35,7 +41,8 @@ while [[ $# -gt 0 ]]; do
             shift 2
             ;;
         --help)
-            echo "Usage: $0 [--users N] [--articles N] [--reads N]"
+            echo "Usage: $0 [--standard] [--users N] [--articles N] [--reads N]"
+            echo "  --standard   Use standard sizes (10000 users, 10000 articles, 50000 reads)"
             exit 0
             ;;
         *)
