@@ -627,8 +627,8 @@ services:
     container_name: vitess-prometheus
     user: root
     volumes:
-      - ./prometheus.yml:/etc/prometheus/prometheus.yml
-      - ./prometheus-rules.yml:/etc/prometheus/prometheus-rules.yml
+      - ../prometheus/prometheus.yml:/etc/prometheus/prometheus.yml
+      - ../prometheus/prometheus-rules.yml:/etc/prometheus/prometheus-rules.yml
       - /var/run/docker.sock:/var/run/docker.sock:ro
     ports:
       - 9090:9090
@@ -643,7 +643,7 @@ services:
       - --web.listen-address=:9093
       - --cluster.listen-address=0.0.0.0:9094
     volumes:
-      - ./alertmanager.yml:/etc/alertmanager/alertmanager.yml
+      - ../prometheus/alertmanager.yml:/etc/alertmanager/alertmanager.yml
     ports:
       - 9093:9093
     networks:
@@ -658,7 +658,7 @@ services:
       - GF_SECURITY_ADMIN_USER=admin
       - GF_SECURITY_ADMIN_PASSWORD=admin
     volumes:
-      - ./grafana/provisioning:/etc/grafana/provisioning
+      - ../prometheus/grafana/provisioning:/etc/grafana/provisioning
     ports:
       - 3001:3000
     networks:
