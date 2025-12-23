@@ -8,7 +8,7 @@ SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
 REPO_ROOT="$(cd "$SCRIPT_DIR/../../.." && pwd)"
 LOCAL_DATA_DIR="$REPO_ROOT/tools/db_gen"
 STAGING_DIR="$SCRIPT_DIR/../staging"
-ARTICLES_NUM=10000
+ARTICLES_NUM=100
 VIDEOS_NUM=50
 
 echo "=== Local Article Preparation Script ==="
