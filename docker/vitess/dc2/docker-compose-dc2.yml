@@ -1,0 +1,417 @@
+# Helvetia DC2: Clone of DC1 cluster
+# 
+# Shares network with DC1 for unified VTAdmin management
+# Uses port offset +10000 from DC1
+# Restores from shared backup volume
+#
+# Usage: docker compose -f docker-compose-dc2.yml up -d
+
+x-vttablet-base-dc2: &vttablet-base-dc2
+  platform: linux/amd64
+  command:
+    - sh
+    - -c
+    - /script/dc2/vttablet-up-dc2.sh
+  depends_on:
+    init_keyspaces_dc2:
+      condition: service_completed_successfully
+  healthcheck:
+    interval: 30s
+    retries: 15
+    test:
+      - CMD-SHELL
+      - curl -s --fail --show-error localhost:8080/debug/health
+    timeout: 10s
+  image: vitess/lite:v23.0.0
+  volumes:
+    - ..:/script
+    - vitess_vitess_backups:/vt/vtdataroot/backups
+  networks:
+    - vitess_vitess_net
+
+x-vttablet-env-base-dc2: &vttablet-env-base-dc2
+  TOPOLOGY_FLAGS: --topo-implementation consul --topo-global-server-address consul1_dc2:8500 --topo-global-root vitess/global
+  WEB_PORT: 8080
+  GRPC_PORT: 15999
+  EXTERNAL_DB: 0
+  SLEEPTIME: 30
+  RESTORE_FROM_BACKUP: 1
+  DB_PORT: ""
+  DB_HOST: ""
+  DB_USER: ""
+  DB_PASS: ""
+  DB_CHARSET: ""
+
+services:
+  # ===========================================
+  # TOPOLOGY SERVICE DC2 (Separate Consul)
+  # ===========================================
+  consul1_dc2:
+    platform: linux/amd64
+    command: agent -server -bootstrap-expect 1 -ui -disable-host-node-id -client 0.0.0.0
+    hostname: consul1_dc2
+    image: hashicorp/consul:latest
+    ports:
+      - 18400:8400
+      - 18500:8500
+      - 18600:8600
+    networks:
+      - vitess_vitess_net
+
+  # ===========================================
+  # VTCTLD DC2
+  # ===========================================
+  vtctld_dc2:
+    platform: linux/amd64
+    command:
+      - sh
+      - -c
+      - '/vt/bin/vtctld --topo-implementation consul --topo-global-server-address consul1_dc2:8500
+        --topo-global-root vitess/global --cell cell1 --cell cell2
+        --service-map "grpc-vtctl,grpc-vtctld" --backup-storage-implementation file 
+        --file-backup-storage-root /vt/vtdataroot/backups --logtostderr=true --port 8080 --grpc-port 15999'
+    depends_on:
+      - consul1_dc2
+    image: vitess/lite:v23.0.0
+    ports:
+      - 25000:8080
+      - 25999:15999
+    volumes:
+      - ..:/script
+      - vitess_vitess_backups:/vt/vtdataroot/backups
+    networks:
+      - vitess_vitess_net
+
+  # ===========================================
+  # VTGATE DC2 CELL1
+  # ===========================================
+  vtgate_cell1_dc2:
+    platform: linux/amd64
+    command:
+      - sh
+      - -c
+      - '/script/run-forever.sh /vt/bin/vtgate --topo-implementation consul --topo-global-server-address
+        consul1_dc2:8500 --topo-global-root vitess/global --logtostderr=true --port 8080 --grpc-port
+        15999 --mysql-server-port 15306 --mysql-auth-server-impl none --cell cell1 --cells-to-watch
+        cell1,cell2 --tablet-types-to-wait PRIMARY,REPLICA --service-map "grpc-vtgateservice"
+        --normalize-queries=true'
+    depends_on:
+      - vtctld_dc2
+    image: vitess/lite:v23.0.0
+    ports:
+      - 25099:8080
+      - 25306:15306
+    expose:
+      - "15999"
+    volumes:
+      - ..:/script
+    networks:
+      - vitess_vitess_net
+
+  # ===========================================
+  # VTGATE DC2 CELL2
+  # ===========================================
+  vtgate_cell2_dc2:
+    platform: linux/amd64
+    command:
+      - sh
+      - -c
+      - '/script/run-forever.sh /vt/bin/vtgate --topo-implementation consul --topo-global-server-address
+        consul1_dc2:8500 --topo-global-root vitess/global --logtostderr=true --port 8080 --grpc-port
+        15999 --mysql-server-port 15306 --mysql-auth-server-impl none --cell cell2 --cells-to-watch
+        cell1,cell2 --tablet-types-to-wait PRIMARY,REPLICA --service-map "grpc-vtgateservice"
+        --normalize-queries=true'
+    depends_on:
+      - vtctld_dc2
+    image: vitess/lite:v23.0.0
+    ports:
+      - 25098:8080
+      - 25307:15306
+    expose:
+      - "15999"
+    volumes:
+      - ..:/script
+    networks:
+      - vitess_vitess_net
+
+  # ===========================================
+  # VTORC DC2
+  # ===========================================
+  vtorc_dc2:
+    platform: linux/amd64
+    command:
+      - sh
+      - -c
+      - /script/vtorc-up.sh
+    depends_on:
+      - vtctld_dc2
+      - set_keyspace_durability_policy_dc2
+    environment:
+      - TOPOLOGY_FLAGS=--topo-implementation consul --topo-global-server-address consul1_dc2:8500
+        --topo-global-root vitess/global
+      - WEB_PORT=8080
+      - EXTERNAL_DB=0
+      - DB_USER=
+      - DB_PASS=
+    image: vitess/lite:v23.0.0
+    ports:
+      - 23000:8080
+    volumes:
+      - ..:/script
+    networks:
+      - vitess_vitess_net
+
+  # ===========================================
+  # INITIALIZE KEYSPACES IN DC2 TOPOLOGY
+  # ===========================================
+  # This must run BEFORE tablets start so they can restore from backups
+  init_keyspaces_dc2:
+    platform: linux/amd64
+    command:
+      - sh
+      - -c
+      - /script/dc2/init-keyspaces-dc2.sh
+    depends_on:
+      - vtctld_dc2
+    image: vitess/lite:v23.0.0
+    volumes:
+      - ..:/script
+    networks:
+      - vitess_vitess_net
+
+  # ===========================================
+  # SET KEYSPACE DURABILITY POLICY DC2
+  # ===========================================
+  set_keyspace_durability_policy_dc2:
+    platform: linux/amd64
+    command:
+      - sh
+      - -c
+      - /script/dc2/set_keyspace_durability_policy-dc2.sh
+    depends_on:
+      init_keyspaces_dc2:
+        condition: service_completed_successfully
+    environment:
+      - GRPC_PORT=15999
+      - DURABILITY_POLICY=${DURABILITY_POLICY:-none}
+      - KEYSPACES=user_keyspace article_keyspace read_keyspace beread_keyspace popularrank_keyspace
+    image: vitess/lite:v23.0.0
+    volumes:
+      - ..:/script
+    networks:
+      - vitess_vitess_net
+
+  # --- USER KEYSPACE DC2
+  vttablet_user_shard1_primary_dc2:
+    <<: *vttablet-base-dc2
+    environment:
+      <<: *vttablet-env-base-dc2
+      TABLET_UID: 2101
+      CELL: cell1
+      KEYSPACE: user_keyspace
+      SHARD: "-80"
+      VTHOST: vttablet_user_shard1_primary_dc2
+    ports:
+      - 25101:8080
+      - "15999"
+      - "3306"
+
+  vttablet_user_shard2_primary_dc2:
+    <<: *vttablet-base-dc2
+    environment:
+      <<: *vttablet-env-base-dc2
+      TABLET_UID: 2601
+      CELL: cell2
+      KEYSPACE: user_keyspace
+      SHARD: "80-"
+      VTHOST: vttablet_user_shard2_primary_dc2
+    ports:
+      - 25601:8080
+      - "15999"
+      - "3306"
+
+  # --- ARTICLE KEYSPACE DC2
+  vttablet_article_shard1_primary_dc2:
+    <<: *vttablet-base-dc2
+    environment:
+      <<: *vttablet-env-base-dc2
+      TABLET_UID: 2201
+      CELL: cell1
+      KEYSPACE: article_keyspace
+      SHARD: "-80"
+      VTHOST: vttablet_article_shard1_primary_dc2
+    ports:
+      - 25201:8080
+      - "15999"
+      - "3306"
+
+  vttablet_article_shard1_replica_dc2:
+    <<: *vttablet-base-dc2
+    environment:
+      <<: *vttablet-env-base-dc2
+      TABLET_UID: 2701
+      CELL: cell2
+      KEYSPACE: article_keyspace
+      SHARD: "-80"
+      VTHOST: vttablet_article_shard1_replica_dc2
+    ports:
+      - 25701:8080
+      - "15999"
+      - "3306"
+
+  vttablet_article_shard2_primary_dc2:
+    <<: *vttablet-base-dc2
+    environment:
+      <<: *vttablet-env-base-dc2
+      TABLET_UID: 2711
+      CELL: cell2
+      KEYSPACE: article_keyspace
+      SHARD: "80-"
+      VTHOST: vttablet_article_shard2_primary_dc2
+    ports:
+      - 25711:8080
+      - "15999"
+      - "3306"
+
+  # --- READ KEYSPACE DC2
+  vttablet_read_shard1_primary_dc2:
+    <<: *vttablet-base-dc2
+    environment:
+      <<: *vttablet-env-base-dc2
+      TABLET_UID: 2301
+      CELL: cell1
+      KEYSPACE: read_keyspace
+      SHARD: "-80"
+      VTHOST: vttablet_read_shard1_primary_dc2
+    ports:
+      - 25301:8080
+      - "15999"
+      - "3306"
+
+  vttablet_read_shard2_primary_dc2:
+    <<: *vttablet-base-dc2
+    environment:
+      <<: *vttablet-env-base-dc2
+      TABLET_UID: 2801
+      CELL: cell2
+      KEYSPACE: read_keyspace
+      SHARD: "80-"
+      VTHOST: vttablet_read_shard2_primary_dc2
+    ports:
+      - 25801:8080
+      - "15999"
+      - "3306"
+
+  # --- BE-READ KEYSPACE DC2
+  vttablet_beread_shard1_primary_dc2:
+    <<: *vttablet-base-dc2
+    environment:
+      <<: *vttablet-env-base-dc2
+      TABLET_UID: 2401
+      CELL: cell1
+      KEYSPACE: beread_keyspace
+      SHARD: "-80"
+      VTHOST: vttablet_beread_shard1_primary_dc2
+    ports:
+      - 25401:8080
+      - "15999"
+      - "3306"
+
+  vttablet_beread_shard1_replica_dc2:
+    <<: *vttablet-base-dc2
+    environment:
+      <<: *vttablet-env-base-dc2
+      TABLET_UID: 2901
+      CELL: cell2
+      KEYSPACE: beread_keyspace
+      SHARD: "-80"
+      VTHOST: vttablet_beread_shard1_replica_dc2
+    ports:
+      - 25901:8080
+      - "15999"
+      - "3306"
+
+  vttablet_beread_shard2_primary_dc2:
+    <<: *vttablet-base-dc2
+    environment:
+      <<: *vttablet-env-base-dc2
+      TABLET_UID: 2911
+      CELL: cell2
+      KEYSPACE: beread_keyspace
+      SHARD: "80-"
+      VTHOST: vttablet_beread_shard2_primary_dc2
+    ports:
+      - 25911:8080
+      - "15999"
+      - "3306"
+
+  # --- POPULAR-RANK KEYSPACE DC2
+  vttablet_popularrank_shard1_primary_dc2:
+    <<: *vttablet-base-dc2
+    environment:
+      <<: *vttablet-env-base-dc2
+      TABLET_UID: 2501
+      CELL: cell1
+      KEYSPACE: popularrank_keyspace
+      SHARD: "-80"
+      VTHOST: vttablet_popularrank_shard1_primary_dc2
+    ports:
+      - 25501:8080
+      - "15999"
+      - "3306"
+
+  vttablet_popularrank_shard2_primary_dc2:
+    <<: *vttablet-base-dc2
+    environment:
+      <<: *vttablet-env-base-dc2
+      TABLET_UID: 3001
+      CELL: cell2
+      KEYSPACE: popularrank_keyspace
+      SHARD: 80-c0
+      VTHOST: vttablet_popularrank_shard2_primary_dc2
+    ports:
+      - 26001:8080
+      - "15999"
+      - "3306"
+
+  vttablet_popularrank_shard3_primary_dc2:
+    <<: *vttablet-base-dc2
+    environment:
+      <<: *vttablet-env-base-dc2
+      TABLET_UID: 3011
+      CELL: cell2
+      KEYSPACE: popularrank_keyspace
+      SHARD: c0-
+      VTHOST: vttablet_popularrank_shard3_primary_dc2
+    ports:
+      - 26011:8080
+      - "15999"
+      - "3306"
+
+  # ===========================================
+  # SCHEMA LOADER DC2 - loads all keyspace schemas
+  # ===========================================
+  schemaload_dc2:
+    platform: linux/amd64
+    command:
+      - sh
+      - -c
+      - /script/dc2/schemaload-all-dc2.sh
+    depends_on:
+      - vtorc_dc2
+    environment:
+      - GRPC_PORT=15999
+      - SLEEPTIME=60
+    image: vitess/lite:v23.0.0
+    volumes:
+      - ..:/script
+    networks:
+      - vitess_vitess_net
+
+networks:
+  vitess_vitess_net:
+    external: true
+
+volumes:
+  vitess_vitess_backups:
+    external: true

@@ -1,0 +1,21 @@
+{
+  "vtctlds": [
+    {
+      "host": {
+        "hostname": "vtctld_dc2:15999"
+      }
+    }
+  ],
+  "vtgates": [
+    {
+      "host": {
+        "hostname": "vtgate_cell1_dc2:15999"
+      }
+    },
+    {
+      "host": {
+        "hostname": "vtgate_cell2_dc2:15999"
+      }
+    }
+  ]
+}

@@ -597,6 +597,7 @@ services:
 
   # ===========================================
   # VTADMIN API - Vitess Admin Backend
+  # Manages both DC1 and DC2 clusters
   # ===========================================
   vtadmin-api:
     platform: linux/amd64
@@ -607,12 +608,13 @@ services:
         /vt/bin/vtadmin \
           --addr "0.0.0.0:14200" \
           --http-origin "http://localhost:14201" \
-          --http-tablet-url-tmpl "http://{{ .Tablet.Hostname }}:15{{ .Tablet.Alias.Uid }}" \
+          --http-tablet-url-tmpl "http://{{ .Tablet.Hostname }}:8080" \
           --tracer "noop" \
           --logtostderr \
           --alsologtostderr \
           --no-rbac \
-          --cluster "id=helvetia,name=helvetia,discovery=staticfile,discovery-staticfile-path=/script/vtadmin/discovery.json,tablet-fqdn-tmpl=http://{{ .Tablet.Hostname }}:15{{ .Tablet.Alias.Uid }}" \
+          --cluster "id=helvetia-dc1,name=Helvetia DC1,discovery=staticfile,discovery-staticfile-path=/script/vtadmin/discovery-dc1.json,tablet-fqdn-tmpl=http://{{ .Tablet.Hostname }}:8080" \
+          --cluster "id=helvetia-dc2,name=Helvetia DC2,discovery=staticfile,discovery-staticfile-path=/script/vtadmin/discovery-dc2.json,tablet-fqdn-tmpl=http://{{ .Tablet.Hostname }}:8080" \
           > /dev/stdout 2>&1
     depends_on:
       - vtctld
