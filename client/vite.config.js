@@ -22,6 +22,18 @@ export default defineConfig({
         changeOrigin: true,
         rewrite: (path) => path.replace(/^\/api\/cell3/, ''),
       },
+      // Proxy API requests to DC2 Cell1 server
+      '/api/dc2-cell1': {
+        target: 'http://localhost:8091',
+        changeOrigin: true,
+        rewrite: (path) => path.replace(/^\/api\/dc2-cell1/, ''),
+      },
+      // Proxy API requests to DC2 Cell2 server
+      '/api/dc2-cell2': {
+        target: 'http://localhost:8092',
+        changeOrigin: true,
+        rewrite: (path) => path.replace(/^\/api\/dc2-cell2/, ''),
+      },
       // Proxy HDFS WebHDFS requests to avoid CORS issues
       '/hdfs': {
         target: 'http://localhost:9870',

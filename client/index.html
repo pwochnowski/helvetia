@@ -156,18 +156,24 @@
         }
         .server-toggle {
             display: flex;
-            align-items: center;
-            gap: 10px;
+            flex-direction: column;
+            align-items: flex-start;
+            gap: 6px;
             margin-left: auto;
             padding: 8px 12px;
             background: #f8f9fa;
             border-radius: 6px;
             border: 1px solid #e0e0e0;
         }
-        .server-toggle label {
-            font-size: 13px;
-            color: #555;
-            font-weight: 500;
+        .server-region-row {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            width: 100%;
+        }
+        .fixed-width {
+            min-width: 320px; /* enough for 3 buttons */
+            justify-content: flex-start;
         }
         .server-switch {
             display: flex;
@@ -211,6 +217,40 @@
         .server-indicator.cell3 {
             background: #e8f5e9;
             color: #2e7d32;
+        }
+        .server-indicator.dc2-cell1 {
+            background: #fce4ec;
+            color: #c2185b;
+        }
+        .server-indicator.dc2-cell2 {
+            background: #f3e5f5;
+            color: #7b1fa2;
+        }
+        .dc-toggle {
+            display: flex;
+            background: #d0d0d0;
+            border-radius: 20px;
+            padding: 3px;
+            margin-right: 8px;
+        }
+        .dc-btn {
+            padding: 6px 14px;
+            border: none;
+            border-radius: 17px;
+            cursor: pointer;
+            font-size: 12px;
+            font-weight: 500;
+            transition: all 0.2s;
+            background: transparent;
+            color: #666;
+        }
+        .dc-btn.active {
+            background: #5c6bc0;
+            color: white;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.15);
+        }
+        .dc-btn:hover:not(.active) {
+            background: #c0c0c0;
         }
         .header-row {
             display: flex;
@@ -421,13 +461,23 @@
         <div class="header-row">
             <h1 id="page-title">📊 Helvetia User Management</h1>
             <div class="server-toggle">
-                <label>Server Region:</label>
-                <div class="server-switch">
-                    <button id="server-cell1-btn" class="active" onclick="switchServer('cell1')">🇨🇳 Beijing</button>
-                    <button id="server-cell2-btn" onclick="switchServer('cell2')">🇭🇰 HongKong</button>
-                    <button id="server-cell3-btn" onclick="switchServer('cell3')">💾 Backup</button>
+                <label>Data Center:</label>
+                <div class="dc-toggle">
+                    <button id="dc1-toggle-btn" class="dc-btn active" onclick="switchDataCenter('dc1')">DataCenter1</button>
+                    <button id="dc2-toggle-btn" class="dc-btn" onclick="switchDataCenter('dc2')">DataCenter2</button>
                 </div>
-                <span id="server-indicator" class="server-indicator cell1">Cell1</span>
+                <div class="server-region-row">
+                    <div class="server-switch fixed-width" id="dc1-servers">
+                        <button id="server-cell1-btn" class="active" onclick="switchServer('cell1')" title="DC1 Beijing">🇨🇳 Beijing</button>
+                        <button id="server-cell2-btn" onclick="switchServer('cell2')" title="DC1 HongKong">🇭🇰 HongKong</button>
+                        <button id="server-cell3-btn" onclick="switchServer('cell3')" title="DC1 Backup">💾 Backup</button>
+                    </div>
+                    <div class="server-switch fixed-width" id="dc2-servers" style="display: none;">
+                        <button id="server-dc2-cell1-btn" onclick="switchServer('dc2-cell1')" title="DC2 Cell1">🌐 Cell1</button>
+                        <button id="server-dc2-cell2-btn" onclick="switchServer('dc2-cell2')" title="DC2 Cell2">🌐 Cell2</button>
+                    </div>
+                    <span id="server-indicator" class="server-indicator cell1">DC1-Cell1</span>
+                </div>
             </div>
         </div>
         

@@ -302,20 +302,48 @@ function initTabs() {
     });
 }
 
+// Track current datacenter
+let currentDataCenter = 'dc1';
+
+// Switch datacenter toggle
+function switchDataCenter(dc) {
+    currentDataCenter = dc;
+    
+    // Update datacenter toggle buttons
+    document.getElementById('dc1-toggle-btn').classList.toggle('active', dc === 'dc1');
+    document.getElementById('dc2-toggle-btn').classList.toggle('active', dc === 'dc2');
+    
+    // Show/hide server options
+    document.getElementById('dc1-servers').style.display = dc === 'dc1' ? 'flex' : 'none';
+    document.getElementById('dc2-servers').style.display = dc === 'dc2' ? 'flex' : 'none';
+    
+    // Switch to the first server in the selected datacenter
+    if (dc === 'dc1') {
+        switchServer('cell1');
+    } else {
+        switchServer('dc2-cell1');
+    }
+}
+
 // Switch server region
 function switchServer(server) {
     if (setServer(server)) {
-        // Update UI buttons
+        // Update UI buttons - DC1
         document.getElementById('server-cell1-btn').classList.toggle('active', server === 'cell1');
         document.getElementById('server-cell2-btn').classList.toggle('active', server === 'cell2');
         document.getElementById('server-cell3-btn').classList.toggle('active', server === 'cell3');
+        // Update UI buttons - DC2
+        document.getElementById('server-dc2-cell1-btn')?.classList.toggle('active', server === 'dc2-cell1');
+        document.getElementById('server-dc2-cell2-btn')?.classList.toggle('active', server === 'dc2-cell2');
         
         // Update indicator
         const indicator = document.getElementById('server-indicator');
         const labels = {
-            cell1: 'Cell1',
-            cell2: 'Cell2',
-            cell3: 'Cell3 (Backup)'
+            cell1: 'DC1-Cell1',
+            cell2: 'DC1-Cell2',
+            cell3: 'DC1-Backup',
+            'dc2-cell1': 'DC2-Cell1',
+            'dc2-cell2': 'DC2-Cell2'
         };
         indicator.textContent = labels[server] || server;
         indicator.className = `server-indicator ${server}`;
@@ -325,9 +353,11 @@ function switchServer(server) {
         loadData();
         
         const serverNames = {
-            cell1: 'Beijing (Cell1)',
-            cell2: 'HongKong (Cell2)',
-            cell3: 'Backup (Cell3)'
+            cell1: 'DC1 Beijing (Cell1)',
+            cell2: 'DC1 HongKong (Cell2)',
+            cell3: 'DC1 Backup (Cell3)',
+            'dc2-cell1': 'DC2 Cell1',
+            'dc2-cell2': 'DC2 Cell2'
         };
         showStatus(`Switched to ${serverNames[server]} server`, 'success');
     }
@@ -340,6 +370,7 @@ window.nextPage = nextPage;
 window.exportData = exportData;
 window.switchTable = switchTable;
 window.switchServer = switchServer;
+window.switchDataCenter = switchDataCenter;
 
 // Initialize on DOM ready
 if (document.readyState === 'loading') {
