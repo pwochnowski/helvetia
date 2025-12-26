@@ -10,11 +10,12 @@ import { tableConfig as bereadConfig, decodeBeRead, encodeBeRead } from './table
 import { tableConfig as popularrankConfig, decodePopularRank, encodePopularRank } from './tables/popularrank.js';
 
 // Server configuration for multi-region setup
-// In development: Vite proxies /api/cell1/* and /api/cell2/* to respective servers
+// In development: Vite proxies /api/cell1/*, /api/cell2/*, /api/cell3/* to respective servers
 // In production: These would be actual server URLs
 const SERVER_CONFIG = {
     cell1: '/api/cell1',  // Beijing region - connects to vtgate_cell1
     cell2: '/api/cell2',  // HongKong region - connects to vtgate_cell2
+    cell3: '/api/cell3',  // Backup region - connects to vtgate_cell3 (backup replicas)
 };
 
 // Current active server (default to cell1)

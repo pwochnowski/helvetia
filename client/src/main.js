@@ -308,17 +308,28 @@ function switchServer(server) {
         // Update UI buttons
         document.getElementById('server-cell1-btn').classList.toggle('active', server === 'cell1');
         document.getElementById('server-cell2-btn').classList.toggle('active', server === 'cell2');
+        document.getElementById('server-cell3-btn').classList.toggle('active', server === 'cell3');
         
         // Update indicator
         const indicator = document.getElementById('server-indicator');
-        indicator.textContent = server === 'cell1' ? 'Cell1' : 'Cell2';
+        const labels = {
+            cell1: 'Cell1',
+            cell2: 'Cell2',
+            cell3: 'Cell3 (Backup)'
+        };
+        indicator.textContent = labels[server] || server;
         indicator.className = `server-indicator ${server}`;
         
         // Reload data from new server
         currentPage = 0;
         loadData();
         
-        showStatus(`Switched to ${server === 'cell1' ? 'Beijing (Cell1)' : 'HongKong (Cell2)'} server`, 'success');
+        const serverNames = {
+            cell1: 'Beijing (Cell1)',
+            cell2: 'HongKong (Cell2)',
+            cell3: 'Backup (Cell3)'
+        };
+        showStatus(`Switched to ${serverNames[server]} server`, 'success');
     }
 }
 

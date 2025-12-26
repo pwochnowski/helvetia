@@ -16,6 +16,11 @@
       "host": {
         "hostname": "vtgate_cell2:15999"
       }
+    },
+    {
+      "host": {
+        "hostname": "vtgate_cell3:15999"
+      }
     }
   ]
 }

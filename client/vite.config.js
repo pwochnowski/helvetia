@@ -16,6 +16,12 @@ export default defineConfig({
         changeOrigin: true,
         rewrite: (path) => path.replace(/^\/api\/cell2/, ''),
       },
+      // Proxy API requests to Cell3 server (Backup region - vtgate_cell3)
+      '/api/cell3': {
+        target: 'http://localhost:8083',
+        changeOrigin: true,
+        rewrite: (path) => path.replace(/^\/api\/cell3/, ''),
+      },
       // Proxy HDFS WebHDFS requests to avoid CORS issues
       '/hdfs': {
         target: 'http://localhost:9870',

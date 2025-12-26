@@ -1,8 +1,9 @@
-# Helvetia: Two-Cell Vitess Setup for Distributed Database
+# Helvetia: Three-Cell Vitess Setup for Distributed Database
 # 
 # Architecture:
 #   Cell1 (Beijing/DBMS1): User(Beijing), Article(science), Read, Be-Read(science), Popular-Rank(daily)
 #   Cell2 (HongKong/DBMS2): User(HongKong), Article(science+technology), Read, Be-Read(science+technology), Popular-Rank(weekly/monthly)
+#   Cell3 (Backup): Backup replicas for all keyspaces (enabled with --profile backup)
 #
 # ===========================================
 # YAML Anchors for tablet definitions
@@ -66,7 +67,7 @@ services:
       - sh
       - -c
       - '/vt/bin/vtctld --topo-implementation consul --topo-global-server-address consul1:8500
-        --topo-global-root vitess/global --cell cell1 --cell cell2
+        --topo-global-root vitess/global --cell cell1 --cell cell2 --cell cell3
         --service-map "grpc-vtctl,grpc-vtctld" --backup-storage-implementation file 
         --file-backup-storage-root /vt/vtdataroot/backups --logtostderr=true --port 8080 --grpc-port 15999'
     depends_on:
@@ -127,6 +128,34 @@ services:
     ports:
       - 15098:8080
       - 15307:15306
+    expose:
+      - "15999"
+    volumes:
+      - .:/script
+    networks:
+      - vitess_net
+
+  # ===========================================
+  # VTGATE CELL3 - Query Router (Backup region)
+  # Uses backup tablets for read-only operations
+  # ===========================================
+  vtgate_cell3:
+    platform: linux/amd64
+    command:
+      - sh
+      - -c
+      - '/script/run-forever.sh /vt/bin/vtgate --topo-implementation consul --topo-global-server-address
+        consul1:8500 --topo-global-root vitess/global --logtostderr=true --port 8080 --grpc-port
+        15999 --mysql-server-port 15306 --mysql-auth-server-impl none --cell cell3 --cells-to-watch
+        cell1,cell2,cell3 --tablet-types-to-wait PRIMARY,REPLICA --service-map "grpc-vtgateservice"
+        --normalize-queries=true'
+    depends_on:
+      - vtctld
+    profiles: [backup]
+    image: vitess/lite:v23.0.0
+    ports:
+      - 15097:8080
+      - 15308:15306
     expose:
       - "15999"
     volumes:
@@ -207,7 +236,7 @@ services:
     environment:
       <<: *vttablet-env-base
       TABLET_UID: 102
-      CELL: cell1
+      CELL: cell3
       KEYSPACE: user_keyspace
       SHARD: "-80"
       VTHOST: vttablet_user_shard1_backup
@@ -236,7 +265,7 @@ services:
     environment:
       <<: *vttablet-env-base
       TABLET_UID: 602
-      CELL: cell2
+      CELL: cell3
       KEYSPACE: user_keyspace
       SHARD: "80-"
       VTHOST: vttablet_user_shard2_backup
@@ -282,7 +311,7 @@ services:
     environment:
       <<: *vttablet-env-base
       TABLET_UID: 202
-      CELL: cell1
+      CELL: cell3
       KEYSPACE: article_keyspace
       SHARD: "-80"
       VTHOST: vttablet_article_shard1_backup
@@ -312,7 +341,7 @@ services:
     environment:
       <<: *vttablet-env-base
       TABLET_UID: 712
-      CELL: cell2
+      CELL: cell3
       KEYSPACE: article_keyspace
       SHARD: "80-"
       VTHOST: vttablet_article_shard2_backup
@@ -342,7 +371,7 @@ services:
     environment:
       <<: *vttablet-env-base
       TABLET_UID: 302
-      CELL: cell1
+      CELL: cell3
       KEYSPACE: read_keyspace
       SHARD: "-80"
       VTHOST: vttablet_read_shard1_backup
@@ -371,7 +400,7 @@ services:
     environment:
       <<: *vttablet-env-base
       TABLET_UID: 802
-      CELL: cell2
+      CELL: cell3
       KEYSPACE: read_keyspace
       SHARD: "80-"
       VTHOST: vttablet_read_shard2_backup
@@ -416,7 +445,7 @@ services:
     environment:
       <<: *vttablet-env-base
       TABLET_UID: 402
-      CELL: cell1
+      CELL: cell3
       KEYSPACE: beread_keyspace
       SHARD: "-80"
       VTHOST: vttablet_beread_shard1_backup
@@ -445,7 +474,7 @@ services:
     environment:
       <<: *vttablet-env-base
       TABLET_UID: 912
-      CELL: cell2
+      CELL: cell3
       KEYSPACE: beread_keyspace
       SHARD: "80-"
       VTHOST: vttablet_beread_shard2_backup
@@ -479,7 +508,7 @@ services:
     environment:
       <<: *vttablet-env-base
       TABLET_UID: 502
-      CELL: cell1
+      CELL: cell3
       KEYSPACE: popularrank_keyspace
       SHARD: "-80"
       VTHOST: vttablet_popularrank_shard1_backup
@@ -508,7 +537,7 @@ services:
     environment:
       <<: *vttablet-env-base
       TABLET_UID: 1002
-      CELL: cell2
+      CELL: cell3
       KEYSPACE: popularrank_keyspace
       SHARD: 80-c0
       VTHOST: vttablet_popularrank_shard2_backup
@@ -537,7 +566,7 @@ services:
     environment:
       <<: *vttablet-env-base
       TABLET_UID: 1012
-      CELL: cell2
+      CELL: cell3
       KEYSPACE: popularrank_keyspace
       SHARD: c0-
       VTHOST: vttablet_popularrank_shard3_backup
