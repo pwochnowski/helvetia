@@ -659,8 +659,8 @@ services:
     user: root
     volumes:
       - ../prometheus/prometheus.yml:/etc/prometheus/prometheus.yml
-      - ../prometheus/prometheus-rules.yml:/etc/prometheus/prometheus-rules.yml
       - /var/run/docker.sock:/var/run/docker.sock:ro
+      - ./docker/vitess/prometheus-rules.yml:/etc/prometheus/rules
     ports:
       - 9090:9090
     networks:
@@ -692,6 +692,17 @@ services:
       - ../prometheus/grafana/provisioning:/etc/grafana/provisioning
     ports:
       - 3001:3000
+    networks:
+      - vitess_net
+
+  alertmanager:
+    image: prom/alertmanager:latest
+    container_name: vitess-alertmanager
+    ports:
+      - "9093:9093"
+    command: --config.file=/etc/alertmanager/alertmanager.yml --log.level=debug
+    volumes:
+      - ../prometheus/alertmanager.yml:/etc/alertmanager/alertmanager.yml
     networks:
       - vitess_net
 
