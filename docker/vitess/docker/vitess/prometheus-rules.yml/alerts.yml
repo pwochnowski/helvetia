@@ -1,0 +1,160 @@
+groups:
+  - name: vitess_alerts
+    interval: 30s
+    rules:
+      # ===== VTTablet Health Alerts =====
+      # - alert: VTTabletDown
+      #   expr: up{job="vttablet"} == 0
+      #   for: 1m
+      #   labels:
+      #     severity: critical
+      #     component: vttablet
+      #   annotations:
+      #     summary: "VTTablet {{ $labels.instance }} is down"
+      #     description: "VTTablet {{ $labels.keyspace }}/{{ $labels.shard }} ({{ $labels.role }}) has been down for more than 1 minute."
+
+      - alert: VTTabletHighCPU
+        expr: rate(container_cpu_usage_seconds_total{cpu="total",id=~"/docker/(d642038cca2e|44ebaf977aab|0aebaca46a8c|ebdccff9e3b8|32d65f63641d|17aee3649d7e|9161f92a16d1|d45f020a4022|4f9a93ca89b9|c588c0003264|36d5ce39b4ca).*"}[15s]) > 1.5
+        for: 10s
+        labels:
+          severity: warning
+          component: vttablet
+        annotations:
+          summary: "VTTablet container high CPU usage"
+          description: "VTTablet container (ID: {{ $labels.id }}) CPU usage is elevated (current: {{ $value | humanizePercentage }})"
+
+      # - alert: VTTabletHighMemory
+      #   expr: (container_memory_working_set_bytes{container_group="vttablet"} / container_spec_memory_limit_bytes{container_group="vttablet"}) * 100 > 85
+      #   for: 5m
+      #   labels:
+      #     severity: warning
+      #     component: vttablet
+      #   annotations:
+      #     summary: "VTTablet {{ $labels.keyspace }}/{{ $labels.shard }} high memory usage"
+      #     description: "VTTablet {{ $labels.keyspace }}/{{ $labels.shard }} ({{ $labels.role }}) memory usage is above 85% (current: {{ $value | humanize }}%)"
+
+      # # ===== VTGate Health Alerts =====
+      # - alert: VTGateDown
+      #   expr: up{job="vtgate"} == 0
+      #   for: 1m
+      #   labels:
+      #     severity: critical
+      #     component: vtgate
+      #   annotations:
+      #     summary: "VTGate {{ $labels.cell }} is down"
+      #     description: "VTGate {{ $labels.cell }} has been down for more than 1 minute."
+
+      # - alert: VTGateHighCPU
+      #   expr: rate(container_cpu_usage_seconds_total{container_group="vtgate"}[5m]) * 100 > 75
+      #   for: 5m
+      #   labels:
+      #     severity: warning
+      #     component: vtgate
+      #   annotations:
+      #     summary: "VTGate {{ $labels.cell }} high CPU usage"
+      #     description: "VTGate {{ $labels.cell }} CPU usage is above 75% (current: {{ $value | humanize }}%)"
+
+      # - alert: VTGateHighErrorRate
+      #   expr: rate(vtgate_api_error_counts[5m]) > 10
+      #   for: 2m
+      #   labels:
+      #     severity: warning
+      #     component: vtgate
+      #   annotations:
+      #     summary: "VTGate {{ $labels.cell }} high error rate"
+      #     description: "VTGate {{ $labels.cell }} is experiencing high error rate ({{ $value | humanize }} errors/sec)"
+
+      # # ===== Query Performance Alerts =====
+      # - alert: SlowQueries
+      #   expr: histogram_quantile(0.95, rate(vtgate_api_bucket[5m])) > 1
+      #   for: 5m
+      #   labels:
+      #     severity: warning
+      #     component: performance
+      #   annotations:
+      #     summary: "Slow queries detected on {{ $labels.cell }}"
+      #     description: "95th percentile query latency is above 1 second (current: {{ $value | humanize }}s)"
+
+      # - alert: HighQueryRate
+      #   expr: rate(vtgate_api_count[5m]) > 1000
+      #   for: 5m
+      #   labels:
+      #     severity: info
+      #     component: performance
+      #   annotations:
+      #     summary: "High query rate on {{ $labels.cell }}"
+      #     description: "Query rate is above 1000 qps (current: {{ $value | humanize }} qps)"
+
+      # # ===== Replication Alerts =====
+      # - alert: ReplicationLag
+      #   expr: vttablet_replication_lag_seconds > 30
+      #   for: 2m
+      #   labels:
+      #     severity: warning
+      #     component: replication
+      #   annotations:
+      #     summary: "Replication lag on {{ $labels.keyspace }}/{{ $labels.shard }}"
+      #     description: "Replica {{ $labels.instance }} has replication lag of {{ $value | humanize }}s"
+
+      # - alert: ReplicationStopped
+      #   expr: vttablet_replication_status == 0
+      #   for: 1m
+      #   labels:
+      #     severity: critical
+      #     component: replication
+      #   annotations:
+      #     summary: "Replication stopped on {{ $labels.keyspace }}/{{ $labels.shard }}"
+      #     description: "Replica {{ $labels.instance }} replication has stopped"
+
+      # ===== Container Resource Alerts =====
+      # - alert: ContainerHighMemory
+      #   expr: (container_memory_working_set_bytes / container_spec_memory_limit_bytes) * 100 > 90
+      #   for: 5m
+      #   labels:
+      #     severity: critical
+      #     component: infrastructure
+      #   annotations:
+      #     summary: "Container {{ $labels.name }} high memory usage"
+      #     description: "Container {{ $labels.name }} memory usage is above 90% (current: {{ $value | humanize }}%)"
+
+      # - alert: ContainerHighDiskIO
+      #   expr: rate(container_fs_writes_bytes_total[5m]) > 100000000
+      #   for: 5m
+      #   labels:
+      #     severity: warning
+      #     component: infrastructure
+      #   annotations:
+      #     summary: "Container {{ $labels.name }} high disk write rate"
+      #     description: "Container {{ $labels.name }} disk write rate is above 100MB/s (current: {{ $value | humanize }}B/s)"
+
+      # # ===== Vitess Control Plane Alerts =====
+      # - alert: VTCtldDown
+      #   expr: up{container_group="vtt_control",name=~".*vtctld.*"} == 0
+      #   for: 1m
+      #   labels:
+      #     severity: critical
+      #     component: control_plane
+      #   annotations:
+      #     summary: "VTCtld is down"
+      #     description: "Vitess control daemon (vtctld) has been down for more than 1 minute."
+
+      # - alert: VTOrcDown
+      #   expr: up{container_group="vtt_control",name=~".*vtorc.*"} == 0
+      #   for: 1m
+      #   labels:
+      #     severity: warning
+      #     component: control_plane
+      #   annotations:
+      #     summary: "VTOrc is down"
+      #     description: "Vitess orchestrator (vtorc) has been down for more than 1 minute."
+
+      # # ===== Consul Alerts =====
+      # - alert: ConsulDown
+      #   expr: up{name=~".*consul.*"} == 0
+      #   for: 1m
+      #   labels:
+      #     severity: critical
+      #     component: topology
+      #   annotations:
+      #     summary: "Consul is down"
+      #     description: "Consul topology service has been down for more than 1 minute. This will affect cluster coordination."
