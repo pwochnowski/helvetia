@@ -22,7 +22,8 @@ export const columnDefs = [
         cellRenderer: params => {
             if (!params.value) return '';
             const aid = params.value;
-            return `<a href="#" class="article-id-link" onclick="event.preventDefault(); window.showArticlePopup('${aid}')">${aid}</a>`;
+            const id = params.data?.id;
+            return `<a href="#" class="article-id-link" onclick="event.preventDefault(); window.showArticlePopup(${id}, '${aid}')">${aid}</a>`;
         },
     },
     { 

@@ -3,7 +3,7 @@
  * Displays article details (text, image, video) in a non-modal popup
  */
 
-import { fetchArticles } from './api.js';
+import { fetchArticleById } from './api.js';
 
 // Popup state
 let popupElement = null;
@@ -24,18 +24,17 @@ function toProxyUrl(hdfsUrl) {
 }
 
 /**
- * Fetch a single article by aid
+ * Fetch a single article by database ID
+ * Uses GET /articles/:id endpoint which benefits from Redis caching
  */
-async function fetchArticleByAid(aid) {
-    // Use RSQL filter to get article by aid
-    const rsqlFilter = `aid=="${aid}"`;
-    const result = await fetchArticles(rsqlFilter, 1, 0);
+async function fetchArticle(id) {
+    const article = await fetchArticleById(id);
     
-    if (result.items.length === 0) {
-        throw new Error(`Article not found: ${aid}`);
+    if (!article) {
+        throw new Error(`Article not found: ${id}`);
     }
     
-    return result.items[0];
+    return article;
 }
 
 /**
@@ -107,8 +106,10 @@ function ensurePopupElement() {
 
 /**
  * Show the article popup for a given article ID
+ * @param {number} id - The database ID of the article
+ * @param {string} aid - The article ID string (e.g., "a123") for display purposes
  */
-export async function showArticlePopup(aid) {
+export async function showArticlePopup(id, aid) {
     if (isLoading) return;
     
     const popup = ensurePopupElement();
@@ -121,17 +122,17 @@ export async function showArticlePopup(aid) {
     loading.style.display = 'block';
     error.style.display = 'none';
     body.style.display = 'none';
-    title.textContent = `Article: ${aid}`;
+    title.textContent = `Article: ${aid || id}`;
     
     // Show popup
     popup.classList.add('visible');
     isLoading = true;
     
     try {
-        const article = await fetchArticleByAid(aid);
+        const article = await fetchArticle(id);
         
         // Update title
-        title.textContent = article.title || `Article: ${aid}`;
+        title.textContent = article.title || `Article: ${aid || id}`;
         
         // Update meta
         popup.querySelector('.article-popup-category').textContent = article.category || 'Unknown';

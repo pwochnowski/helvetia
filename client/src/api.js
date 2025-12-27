@@ -231,6 +231,29 @@ export async function deleteUser(id) {
 // ==================== Article API ====================
 
 /**
+ * Fetch a single article by database ID
+ * Uses the GET /articles/:id endpoint which benefits from Redis caching
+ * @param {number} id - The database ID of the article
+ * @returns {object} The article object
+ */
+export async function fetchArticleById(id) {
+    const response = await fetch(`${getApiBase()}/articles/${id}`, {
+        headers: {
+            'Accept': 'application/x-protobuf',
+        },
+    });
+    
+    if (!response.ok) {
+        throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+    }
+    
+    const buffer = await response.arrayBuffer();
+    const uint8 = new Uint8Array(buffer);
+    
+    return decodeArticle(uint8, decodeVarint, decodeString);
+}
+
+/**
  * Fetch articles with pagination and sorting
  * @returns {{ items: array, totalCount: number }}
  */
