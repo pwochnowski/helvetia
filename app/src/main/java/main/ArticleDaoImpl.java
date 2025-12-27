@@ -55,8 +55,7 @@ public class ArticleDaoImpl implements ArticleDao {
                 .setAbstract(nullToEmpty(rs.getString("abstract")))
                 .addAllArticleTags(tagList)
                 .addAllAuthors(authorList)
-                .setLanguage(nullToEmpty(rs.getString("language")))
-                .setText(nullToEmpty(rs.getString("text")));
+                .setLanguage(nullToEmpty(rs.getString("language")));
         
         // Handle HDFS file paths and generate download URLs
         String textPath = rs.getString("textPath");
@@ -102,8 +101,8 @@ public class ArticleDaoImpl implements ArticleDao {
     @Override
     public void create(Article a) throws Exception {
         String sql = """
-            INSERT INTO article_keyspace.article (id, timestamp, aid, title, category, abstract, articleTags, authors, language, text, textPath, imagePath, videoPath)
-            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+            INSERT INTO article_keyspace.article (id, timestamp, aid, title, category, abstract, articleTags, authors, language, textPath, imagePath, videoPath)
+            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
         """;
 
         try (Connection conn = db.getConnection();
@@ -116,7 +115,7 @@ public class ArticleDaoImpl implements ArticleDao {
 
     @Override
     public Article get(long id) throws Exception {
-        String sql = "SELECT id, timestamp, aid, title, category, abstract, articleTags, authors, language, text, textPath, imagePath, videoPath FROM article_keyspace.article WHERE id = ?";
+        String sql = "SELECT id, timestamp, aid, title, category, abstract, articleTags, authors, language, textPath, imagePath, videoPath FROM article_keyspace.article WHERE id = ?";
 
         try (Connection conn = db.getConnection();
              PreparedStatement st = conn.prepareStatement(sql)) {
@@ -158,7 +157,6 @@ public class ArticleDaoImpl implements ArticleDao {
         st.setString(i++, gson.toJson(a.getArticleTagsList()));
         st.setString(i++, gson.toJson(a.getAuthorsList()));
         st.setString(i++, emptyToNull(a.getLanguage()));
-        st.setString(i++, emptyToNull(a.getText()));
         st.setString(i++, emptyToNull(a.getTextPath()));
         st.setString(i++, emptyToNull(a.getImagePath()));
         st.setString(i++, emptyToNull(a.getVideoPath()));
@@ -194,7 +192,7 @@ public class ArticleDaoImpl implements ArticleDao {
     @Override
     public List<Article> list(String rsqlFilter, int limit, int offset, String sortBy, String sortDir) throws Exception {
         // Base query with HDFS path fields
-        String baseSql = "SELECT id, timestamp, aid, title, category, abstract, articleTags, authors, language, text, textPath, imagePath, videoPath FROM article_keyspace.article";
+        String baseSql = "SELECT id, timestamp, aid, title, category, abstract, articleTags, authors, language, textPath, imagePath, videoPath FROM article_keyspace.article";
         
         // Convert RSQL to SQL WHERE clause
         RsqlToSql.SqlResult filterResult = rsqlConverter.convert(rsqlFilter);

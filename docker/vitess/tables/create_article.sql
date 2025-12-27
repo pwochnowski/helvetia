@@ -10,7 +10,6 @@ CREATE TABLE IF NOT EXISTS `article` (
   `articleTags` JSON,
   `authors` JSON,
   `language` VARCHAR(32) DEFAULT 'en',
-  `text` LONGTEXT,
   `textPath` VARCHAR(512) COMMENT 'HDFS path for text file',
   `imagePath` VARCHAR(512) COMMENT 'HDFS path for image file',
   `videoPath` VARCHAR(512) COMMENT 'HDFS path for video file',

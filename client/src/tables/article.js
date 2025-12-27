@@ -181,7 +181,7 @@ export const columnDefs = [
 // Field numbers from article.proto:
 // 1: id (int64), 2: timestamp (int64), 3: aid, 4: title, 5: category,
 // 6: abstract, 7: articleTags (repeated), 8: authors (repeated), 9: language,
-// 10: text, 11: textPath, 12: imagePath, 13: videoPath,
+// 11: textPath, 12: imagePath, 13: videoPath,
 // 14: textUrl, 15: imageUrl, 16: videoUrl
 
 export function decodeArticle(buffer, decodeVarint, decodeString) {
@@ -195,7 +195,6 @@ export function decodeArticle(buffer, decodeVarint, decodeString) {
         articleTags: [],
         authors: [],
         language: '',
-        text: '',
         textPath: '',
         imagePath: '',
         videoPath: '',
@@ -238,7 +237,6 @@ export function decodeArticle(buffer, decodeVarint, decodeString) {
                 case 7: article.articleTags.push(str); break;
                 case 8: article.authors.push(str); break;
                 case 9: article.language = str; break;
-                case 10: article.text = str; break;
                 case 11: article.textPath = str; break;
                 case 12: article.imagePath = str; break;
                 case 13: article.videoPath = str; break;
@@ -266,7 +264,6 @@ export function encodeArticle(article, encodeVarintField, encodeString) {
         ...(article.articleTags || []).flatMap(tag => encodeString(7, tag)),
         ...(article.authors || []).flatMap(author => encodeString(8, author)),
         ...encodeString(9, article.language),
-        ...encodeString(10, article.text),
         ...encodeString(11, article.textPath),
         ...encodeString(12, article.imagePath),
         ...encodeString(13, article.videoPath),

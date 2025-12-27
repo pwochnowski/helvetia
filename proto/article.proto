@@ -15,7 +15,6 @@ message Article {
   repeated string articleTags = 7;
   repeated string authors = 8;
   string language = 9;
-  string text = 10;
   
   // File paths stored in HDFS
   string textPath = 11;   // HDFS path for text file

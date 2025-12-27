@@ -128,21 +128,6 @@ def get_article_category(i: int) -> str:
     return "science" if hash_val < 45 else "technology"
 
 
-def get_text_category(i: int) -> str:
-    """Get text file category matching article category.
-    science -> tech (BBC tech category)
-    technology -> business/entertainment/sport
-    """
-    hash_val = (i * 31 + 17) % 100
-    if hash_val < 45:
-        # science articles use tech texts
-        return "tech"
-    else:
-        # technology articles use business/entertainment/sport
-        sub_hash = (i * 37 + 13) % 3
-        return ["business", "entertainment", "sport"][sub_hash]
-
-
 def gen_article(i: int, base_time: datetime, articles_count: int = ARTICLES_NUM) -> Dict[str, Any]:
     """Generate a single article record matching the schema."""
     # Use deterministic category based on index (matching HDFS loader)
@@ -153,12 +138,8 @@ def gen_article(i: int, base_time: datetime, articles_count: int = ARTICLES_NUM)
     # Store for read generation
     aid_to_language[aid] = language
     
-    # Get matching text category for sensible content
-    text_cat = get_text_category(i)
-    
-    # Generate placeholder text (in production, you'd load real content)
+    # Generate placeholder abstract
     abstract = f"Abstract for article {i}: A comprehensive overview of {category} topics."
-    text = f"Full text content for article {i} in category {category} (text from {text_cat}). " * 50
     
     # Spread articles over 1 year (365 days)
     days_spread = 365
@@ -185,7 +166,6 @@ def gen_article(i: int, base_time: datetime, articles_count: int = ARTICLES_NUM)
         "articleTags": json.dumps(random_tags(random.randint(1, 5))),
         "authors": json.dumps(random_authors()),
         "language": language,
-        "text": text,
         "textPath": text_path,
         "imagePath": image_path,
         "videoPath": video_path,
@@ -284,13 +264,13 @@ def bulk_insert_articles(cursor, articles: List[Dict]) -> int:
     sql = """
         INSERT INTO `article`
         (`id`, `aid`, `timestamp`, `title`, `category`, `abstract`, `articleTags`,
-         `authors`, `language`, `text`, `textPath`, `imagePath`, `videoPath`)
-        VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)
+         `authors`, `language`, `textPath`, `imagePath`, `videoPath`)
+        VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)
     """
     
     values = [
         (a["id"], a["aid"], a["timestamp"], a["title"], a["category"], a["abstract"],
-         a["articleTags"], a["authors"], a["language"], a["text"],
+         a["articleTags"], a["authors"], a["language"],
          a["textPath"], a["imagePath"], a["videoPath"])
         for a in articles
     ]
