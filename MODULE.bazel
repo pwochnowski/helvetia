@@ -33,6 +33,9 @@ maven.install(
         
         # RSQL parser for query filtering
         "cz.jirutka.rsql:rsql-parser:2.1.0",
+        
+        # Redis client for caching
+        "redis.clients:jedis:5.1.0",
     ],
 )
 use_repo(maven, "maven")

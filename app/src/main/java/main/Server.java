@@ -18,11 +18,13 @@ import static spark.Spark.*;
 
 public class Server {
     private final DB db;
+    private final RedisCache cache;
     private static final Logger log = LogManager.getLogger(Server.class);
 
 
     public Server(DB db) {
         this.db = db;
+        this.cache = RedisCache.fromEnv();
     }
 
 
@@ -100,29 +102,48 @@ public class Server {
         post("/articles", (req, res) -> {
             Article input = Article.parseFrom(req.bodyAsBytes());
             dao.create(input);
-
+            // Invalidate list cache on create
+            cache.deletePattern(RedisCache.ARTICLE_LIST_PREFIX + "*");
             return "";
         });
 
         get("/articles/:id", (req, res) -> {
             long id = Long.parseLong(req.params(":id"));
+            String cacheKey = RedisCache.articleKey(id);
+            
+            // Try cache first
+            byte[] cached = cache.get(cacheKey);
+            if (cached != null) {
+                res.type("application/x-protobuf");
+                return cached;
+            }
+            
+            // Cache miss - fetch from database
             Article a = dao.get(id);
             if (a == null) halt(404);
 
+            byte[] bytes = a.toByteArray();
+            cache.set(cacheKey, bytes);
+            
             res.type("application/x-protobuf");
-            return a.toByteArray();
+            return bytes;
         });
 
         put("/articles/:id", (req, res) -> {
             Article input = Article.parseFrom(req.bodyAsBytes());
             dao.update(input);
+            // Invalidate caches on update
+            cache.delete(RedisCache.articleKey(input.getId()));
+            cache.deletePattern(RedisCache.ARTICLE_LIST_PREFIX + "*");
             return "";
         });
 
         delete("/articles/:id", (req, res) -> {
             long id = Long.parseLong(req.params(":id"));
             boolean ok = dao.delete(id);
-
+            // Invalidate caches on delete
+            cache.delete(RedisCache.articleKey(id));
+            cache.deletePattern(RedisCache.ARTICLE_LIST_PREFIX + "*");
             res.status(ok ? 200 : 404);
             return "";
         });
@@ -147,7 +168,17 @@ public class Server {
             String sortBy = req.queryParams("sortBy");
             String sortDir = req.queryParams("sortDir");
             
-            // Get total count and list
+            // Generate cache key for this query
+            String cacheKey = RedisCache.articleListKey(filter, limit, offset, sortBy, sortDir);
+            
+            // Try cache first
+            byte[] cached = cache.get(cacheKey);
+            if (cached != null) {
+                res.type("application/x-protobuf");
+                return cached;
+            }
+            
+            // Cache miss - fetch from database
             final long totalCount = dao.count(filter);
             final var list = dao.list(filter, limit, offset, sortBy, sortDir);
 
@@ -155,8 +186,12 @@ public class Server {
                 .addAllArticles(list)
                 .setTotalCount(totalCount)
                 .build();
+            
+            byte[] bytes = out.toByteArray();
+            cache.set(cacheKey, bytes);
+            
             res.type("application/x-protobuf");
-            return out.toByteArray();
+            return bytes;
         });
     }
 

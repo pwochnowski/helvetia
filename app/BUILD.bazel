@@ -30,5 +30,6 @@ java_binary(
         "@maven//:com_mysql_mysql_connector_j",
         "@maven//:com_google_code_gson_gson",
         "@maven//:cz_jirutka_rsql_rsql_parser",
+        "@maven//:redis_clients_jedis",
     ],
 )
