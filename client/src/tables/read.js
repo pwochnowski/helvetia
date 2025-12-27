@@ -37,13 +37,9 @@ export const columnDefs = [
         field: 'region', 
         headerName: 'Region',
         width: 110,
-        editable: false,
+        editable: false,  // Primary vindex column - cannot be changed
         filter: 'agTextColumnFilter',
         sortable: true,
-        cellEditor: 'agSelectCellEditor',
-        cellEditorParams: {
-            values: ['Beijing', 'HongKong']
-        }
     },
     { 
         field: 'readTimeLength', 

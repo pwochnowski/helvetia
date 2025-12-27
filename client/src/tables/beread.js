@@ -29,7 +29,7 @@ export const columnDefs = [
         field: 'category', 
         headerName: 'Category',
         width: 120,
-        editable: false,
+        editable: false,  // Primary vindex column - cannot be changed
         filter: 'agTextColumnFilter',
         sortable: true,
     },
@@ -37,15 +37,16 @@ export const columnDefs = [
         field: 'readNum', 
         headerName: 'Reads',
         width: 100,
-        editable: false,
+        editable: true,
         filter: 'agNumberColumnFilter',
         sortable: true,
+        cellEditor: 'agNumberCellEditor',
     },
     { 
         field: 'readUidList', 
         headerName: 'Read By',
         width: 200,
-        editable: false,
+        editable: true,
         filter: 'agTextColumnFilter',
         sortable: false,
         valueFormatter: params => {
@@ -57,20 +58,27 @@ export const columnDefs = [
             }
             return params.value || '';
         },
+        valueParser: params => {
+            if (typeof params.newValue === 'string') {
+                return params.newValue.split(',').map(s => s.trim()).filter(s => s);
+            }
+            return params.newValue;
+        }
     },
     { 
         field: 'commentNum', 
         headerName: 'Comments',
         width: 100,
-        editable: false,
+        editable: true,
         filter: 'agNumberColumnFilter',
         sortable: true,
+        cellEditor: 'agNumberCellEditor',
     },
     { 
         field: 'commentUidList', 
         headerName: 'Commented By',
         width: 200,
-        editable: false,
+        editable: true,
         filter: 'agTextColumnFilter',
         sortable: false,
         valueFormatter: params => {
@@ -82,20 +90,27 @@ export const columnDefs = [
             }
             return params.value || '';
         },
+        valueParser: params => {
+            if (typeof params.newValue === 'string') {
+                return params.newValue.split(',').map(s => s.trim()).filter(s => s);
+            }
+            return params.newValue;
+        }
     },
     { 
         field: 'agreeNum', 
         headerName: 'Agrees',
         width: 100,
-        editable: false,
+        editable: true,
         filter: 'agNumberColumnFilter',
         sortable: true,
+        cellEditor: 'agNumberCellEditor',
     },
     { 
         field: 'agreeUidList', 
         headerName: 'Agreed By',
         width: 200,
-        editable: false,
+        editable: true,
         filter: 'agTextColumnFilter',
         sortable: false,
         valueFormatter: params => {
@@ -107,20 +122,27 @@ export const columnDefs = [
             }
             return params.value || '';
         },
+        valueParser: params => {
+            if (typeof params.newValue === 'string') {
+                return params.newValue.split(',').map(s => s.trim()).filter(s => s);
+            }
+            return params.newValue;
+        }
     },
     { 
         field: 'shareNum', 
         headerName: 'Shares',
         width: 100,
-        editable: false,
+        editable: true,
         filter: 'agNumberColumnFilter',
         sortable: true,
+        cellEditor: 'agNumberCellEditor',
     },
     { 
         field: 'shareUidList', 
         headerName: 'Shared By',
         width: 200,
-        editable: false,
+        editable: true,
         filter: 'agTextColumnFilter',
         sortable: false,
         valueFormatter: params => {
@@ -132,6 +154,12 @@ export const columnDefs = [
             }
             return params.value || '';
         },
+        valueParser: params => {
+            if (typeof params.newValue === 'string') {
+                return params.newValue.split(',').map(s => s.trim()).filter(s => s);
+            }
+            return params.newValue;
+        }
     },
     { 
         field: 'timestamp', 

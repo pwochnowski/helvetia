@@ -84,18 +84,18 @@ public class PopularRankDaoImpl implements PopularRankDao {
 
     @Override
     public void update(PopularRank p) throws Exception {
+        // Note: temporalGranularity is part of the primary vindex (temporal_vdx) and cannot be updated
         String sql = """
             UPDATE popularrank_keyspace.popular_rank
-            SET temporalGranularity = ?, articleAidList = ?, rankDate = ?
+            SET articleAidList = ?, rankDate = ?
             WHERE id = ?
         """;
 
         try (Connection conn = db.getConnection();
              PreparedStatement st = conn.prepareStatement(sql)) {
-            st.setString(1, p.getTemporalGranularity());
-            st.setString(2, gson.toJson(p.getArticleAidListList()));
-            st.setDate(3, Date.valueOf(p.getRankDate()));
-            st.setLong(4, p.getId());
+            st.setString(1, gson.toJson(p.getArticleAidListList()));
+            st.setDate(2, Date.valueOf(p.getRankDate()));
+            st.setLong(3, p.getId());
             st.executeUpdate();
         }
     }

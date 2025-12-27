@@ -130,19 +130,24 @@ public class ArticleDaoImpl implements ArticleDao {
 
     @Override
     public void update(Article a) throws Exception {
+        // Note: id and category are part of the primary vindex (category_vdx) and cannot be updated
         String sql = """
             UPDATE article_keyspace.article
-            SET title = ?, category = ?, abstract = ?, language = ?
+            SET title = ?, abstract = ?, articleTags = ?, authors = ?, language = ?, textPath = ?, imagePath = ?, videoPath = ?
             WHERE id = ?
         """;
 
         try (Connection conn = db.getConnection();
              PreparedStatement st = conn.prepareStatement(sql)) {
             st.setString(1, a.getTitle());
-            st.setString(2, a.getCategory());
-            st.setString(3, a.getAbstract());
-            st.setString(4, a.getLanguage());
-            st.setLong(5, a.getId());
+            st.setString(2, emptyToNull(a.getAbstract()));
+            st.setString(3, gson.toJson(a.getArticleTagsList()));
+            st.setString(4, gson.toJson(a.getAuthorsList()));
+            st.setString(5, emptyToNull(a.getLanguage()));
+            st.setString(6, emptyToNull(a.getTextPath()));
+            st.setString(7, emptyToNull(a.getImagePath()));
+            st.setString(8, emptyToNull(a.getVideoPath()));
+            st.setLong(9, a.getId());
             st.executeUpdate();
         }
     }

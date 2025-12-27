@@ -92,16 +92,26 @@ public class UserDaoImpl implements UserDao {
 
     @Override
     public void update(User u) throws Exception {
+        // Note: id and region are part of the primary vindex (region_vdx) and cannot be updated
         String sql = """
             UPDATE user_keyspace.user
-            SET name = ?
+            SET name = ?, gender = ?, email = ?, phone = ?, dept = ?, grade = ?, language = ?, role = ?, preferTags = ?, obtainedCredits = ?
             WHERE id = ?
         """;
 
         try (Connection conn = db.getConnection();
              PreparedStatement st = conn.prepareStatement(sql)) {
             st.setString(1, u.getName());
-            st.setLong(2, u.getId());
+            st.setString(2, emptyToNull(u.getGender()));
+            st.setString(3, emptyToNull(u.getEmail()));
+            st.setString(4, emptyToNull(u.getPhone()));
+            st.setString(5, emptyToNull(u.getDept()));
+            st.setString(6, emptyToNull(u.getGrade()));
+            st.setString(7, emptyToNull(u.getLanguage()));
+            st.setString(8, emptyToNull(u.getRole()));
+            st.setString(9, gson.toJson(u.getPreferTagsList()));
+            st.setInt(10, u.getObtainedCredits());
+            st.setLong(11, u.getId());
             st.executeUpdate();
         }
     }

@@ -16,7 +16,7 @@ export const columnDefs = [
         field: 'temporalGranularity', 
         headerName: 'Granularity',
         width: 120,
-        editable: false,
+        editable: false,  // Primary vindex column - cannot be changed
         filter: 'agTextColumnFilter',
         sortable: true,
     },
@@ -24,7 +24,7 @@ export const columnDefs = [
         field: 'rankDate', 
         headerName: 'Date',
         width: 120,
-        editable: false,
+        editable: true,
         filter: 'agTextColumnFilter',
         sortable: true,
     },
@@ -32,7 +32,7 @@ export const columnDefs = [
         field: 'articleAidList', 
         headerName: 'Top Articles',
         width: 400,
-        editable: false,
+        editable: true,
         filter: 'agTextColumnFilter',
         sortable: false,
         cellRenderer: params => {
@@ -43,6 +43,18 @@ export const columnDefs = [
                 `<a href="#" class="article-id-link" onclick="event.preventDefault(); window.showArticlePopup('${aid}')">${aid}</a>`
             ).join(', ');
         },
+        valueFormatter: params => {
+            if (Array.isArray(params.value)) {
+                return params.value.join(', ');
+            }
+            return params.value || '';
+        },
+        valueParser: params => {
+            if (typeof params.newValue === 'string') {
+                return params.newValue.split(',').map(s => s.trim()).filter(s => s);
+            }
+            return params.newValue;
+        }
     },
     { 
         field: 'timestamp', 

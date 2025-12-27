@@ -37,13 +37,9 @@ export const columnDefs = [
         field: 'category', 
         headerName: 'Category',
         width: 120,
-        editable: true,
+        editable: false,  // Primary vindex column - cannot be changed
         filter: 'agTextColumnFilter',
         sortable: true,
-        cellEditor: 'agSelectCellEditor',
-        cellEditorParams: {
-            values: ['science', 'technology', 'entertainment', 'sport', 'business', 'politics', 'health', 'travel']
-        }
     },
     { 
         field: 'abstract', 
