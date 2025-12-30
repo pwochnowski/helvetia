@@ -215,7 +215,23 @@ public class UserReadDaoImpl implements UserReadDao {
     }
 
     @Override
+    public boolean hasRegionFilter(String rsqlFilter) {
+        if (rsqlFilter == null || rsqlFilter.isBlank()) {
+            return false;
+        }
+        // Check if the filter contains a region equality filter
+        // RSQL format: region==Beijing or region=="Beijing"
+        return rsqlFilter.contains("region==");
+    }
+    
+    @Override
     public long count(String rsqlFilter) throws Exception {
+        // Only do expensive cross-shard count if filtering by region
+        // Without region filter, the join scatters to all shards and can exceed row limits
+        if (!hasRegionFilter(rsqlFilter)) {
+            return PLACEHOLDER_COUNT;
+        }
+        
         StringBuilder sql = new StringBuilder();
         sql.append("SELECT COUNT(*) ");
         sql.append(getFromClause());

@@ -114,6 +114,9 @@ function decodeListWithCount(buffer, decodeItem) {
     let totalCount = 0;
     let pos = 0;
     
+    // Max safe integer threshold - anything larger is treated as placeholder (-1)
+    const MAX_REASONABLE_COUNT = 1000000000; // 1 billion
+    
     while (pos < buffer.length) {
         const { value: tag, bytesRead: tagBytes } = decodeVarint(buffer, pos);
         pos += tagBytes;
@@ -132,7 +135,9 @@ function decodeListWithCount(buffer, decodeItem) {
         } else if (fn === 2 && wireType === 0) {
             // Field 2: Varint (totalCount)
             const { value, bytesRead } = decodeVarint(buffer, pos);
-            totalCount = Number(value);
+            const rawCount = Number(value);
+            // Treat very large values as placeholder (-1 encoded as unsigned)
+            totalCount = rawCount > MAX_REASONABLE_COUNT ? -1 : rawCount;
             pos += bytesRead;
         } else {
             // Unknown field, skip

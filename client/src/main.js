@@ -16,10 +16,16 @@ let gridApi = null;
 const PAGE_SIZE = 100;
 let currentPage = 0;
 let totalCount = 0;
+let isEstimatedCount = false;  // True when count is a placeholder (for cross-shard joins)
+let hasReachedEnd = false;     // True when we've detected the last page
 let isLoading = false;
 let currentFilter = null;
 let currentSortBy = null;
 let currentSortDir = null;
+
+// Placeholder count used for cross-shard queries (matches server-side PLACEHOLDER_COUNT = -1)
+const PLACEHOLDER_COUNT = -1;
+const ESTIMATED_TOTAL = 50000;  // Display value when count is unavailable
 
 // Get current table config
 function getTableConfig() {
@@ -43,23 +49,37 @@ function showStatus(message, type = 'success') {
 // Update row count display with total and current page info
 function updateRowCount() {
     const config = getTableConfig();
-    const totalPages = Math.ceil(totalCount / PAGE_SIZE);
-    const displayPage = currentPage + 1;
     const startRow = currentPage * PAGE_SIZE + 1;
-    const endRow = Math.min((currentPage + 1) * PAGE_SIZE, totalCount);
+    const rowData = gridApi?.getDisplayedRowCount() || 0;
+    const endRow = currentPage * PAGE_SIZE + rowData;
     
-    if (totalCount > 0) {
+    if (rowData > 0) {
+        let countDisplay;
+        if (isEstimatedCount && !hasReachedEnd) {
+            // Show estimated count with indicator
+            countDisplay = `~${ESTIMATED_TOTAL.toLocaleString()}+`;
+        } else if (hasReachedEnd) {
+            // We know the exact count now
+            countDisplay = totalCount.toLocaleString();
+        } else {
+            countDisplay = totalCount.toLocaleString();
+        }
+        
+        const totalPages = hasReachedEnd ? Math.ceil(totalCount / PAGE_SIZE) : '?';
+        const displayPage = currentPage + 1;
+        
         document.getElementById('row-count').textContent = 
-            `Showing ${startRow.toLocaleString()}-${endRow.toLocaleString()} of ${totalCount.toLocaleString()} ${config.name} (Page ${displayPage} of ${totalPages})`;
-    } else {
+            `Showing ${startRow.toLocaleString()}-${endRow.toLocaleString()} of ${countDisplay} ${config.name} (Page ${displayPage} of ${totalPages})`;
+    } else if (currentPage === 0) {
         document.getElementById('row-count').textContent = `No ${config.name} found`;
+    } else {
+        // Empty page but not first page - we've gone past the end
+        document.getElementById('row-count').textContent = `No more ${config.name}`;
     }
 }
 
 // Update pagination controls
 function updatePaginationControls() {
-    const totalPages = Math.ceil(totalCount / PAGE_SIZE);
-    
     const prevBtn = document.getElementById('prev-page-btn');
     const nextBtn = document.getElementById('next-page-btn');
     const pageInfo = document.getElementById('page-info');
@@ -68,10 +88,21 @@ function updatePaginationControls() {
         prevBtn.disabled = currentPage === 0 || isLoading;
     }
     if (nextBtn) {
-        nextBtn.disabled = currentPage >= totalPages - 1 || isLoading;
+        // Disable next button if we've reached the end
+        const atEnd = hasReachedEnd && (currentPage >= Math.ceil(totalCount / PAGE_SIZE) - 1);
+        nextBtn.disabled = atEnd || isLoading;
+        // Visual indicator that we don't know if there's more
+        if (isEstimatedCount && !hasReachedEnd) {
+            nextBtn.textContent = 'Next →';
+            nextBtn.title = 'More pages may be available';
+        } else {
+            nextBtn.textContent = 'Next →';
+            nextBtn.title = '';
+        }
     }
     if (pageInfo) {
-        pageInfo.textContent = `Page ${currentPage + 1} of ${totalPages || 1}`;
+        const totalPages = hasReachedEnd ? Math.ceil(totalCount / PAGE_SIZE) : '?';
+        pageInfo.textContent = `Page ${currentPage + 1} of ${totalPages}`;
     }
 }
 
@@ -128,8 +159,24 @@ async function loadPage(page = 0) {
         const offset = page * PAGE_SIZE;
         const result = await fetchData(currentTable, currentFilter, PAGE_SIZE, offset, currentSortBy, currentSortDir);
         
-        // Update total count from server
-        totalCount = result.totalCount;
+        // Handle placeholder count from server (-1 means count was too expensive)
+        if (result.totalCount === PLACEHOLDER_COUNT) {
+            isEstimatedCount = true;
+            totalCount = ESTIMATED_TOTAL;  // Display placeholder
+        } else {
+            isEstimatedCount = false;
+            totalCount = result.totalCount;
+            hasReachedEnd = true;  // Server gave us real count
+        }
+        
+        // Detect end-of-list: fewer rows returned than requested
+        const returnedRows = result.items.length;
+        if (returnedRows < PAGE_SIZE) {
+            hasReachedEnd = true;
+            // Calculate actual total count based on current position
+            totalCount = offset + returnedRows;
+            isEstimatedCount = false;
+        }
         
         // Set page data in grid
         gridApi.setGridOption('rowData', result.items);
@@ -162,21 +209,32 @@ async function prevPage() {
 
 // Navigate to next page
 async function nextPage() {
-    const totalPages = Math.ceil(totalCount / PAGE_SIZE);
-    if (currentPage < totalPages - 1) {
-        await loadPage(currentPage + 1);
+    // If we have a definite count, check if we can go forward
+    if (hasReachedEnd) {
+        const totalPages = Math.ceil(totalCount / PAGE_SIZE);
+        if (currentPage >= totalPages - 1) {
+            return;
+        }
     }
+    // Otherwise, try loading the next page - we'll detect end-of-list if needed
+    await loadPage(currentPage + 1);
 }
 
 // Handle filter changes - reload data from server with new filters
 const onFilterChanged = debounce(() => {
     console.log('Filter changed, reloading from server...');
+    // Reset estimation state when filter changes
+    hasReachedEnd = false;
+    isEstimatedCount = false;
     loadPage(0);  // Reset to first page when filter changes
 }, 300);  // 300ms debounce to avoid too many requests while typing
 
 // Handle sort changes - reload data from server with new sort
 const onSortChanged = () => {
     console.log('Sort changed, reloading from server...');
+    // Reset estimation state when sort changes
+    hasReachedEnd = false;
+    isEstimatedCount = false;
     loadPage(0);  // Reset to first page when sort changes
 };
 
@@ -236,6 +294,8 @@ function switchTable(tableName) {
     totalCount = 0;
     currentSortBy = null;
     currentSortDir = null;
+    hasReachedEnd = false;
+    isEstimatedCount = false;
     gridApi.setGridOption('rowData', []);
     loadPage(0);
 }
