@@ -13,6 +13,8 @@ import helvetia.BeRead;
 import helvetia.BeReadList;
 import helvetia.PopularRank;
 import helvetia.PopularRankList;
+import helvetia.UserRead;
+import helvetia.UserReadList;
 
 import static spark.Spark.*;
 
@@ -393,12 +395,54 @@ public class Server {
         });
     }
 
+    /**
+     * UserRead endpoints - joined view of user and read tables.
+     * This view allows filtering on both user and read fields, and Vitess
+     * will push queries down to specific shards when filtering on region or uid.
+     */
+    void addUserReadEndpoints() {
+        UserReadDao dao = new UserReadDaoImpl(db);
+
+        get("/userreads", (req, res) -> {
+            String filter = req.queryParams("filter");
+            
+            // Pagination parameters
+            int limit = 100;
+            String limitParam = req.queryParams("limit");
+            if (limitParam != null) {
+                limit = Math.min(Integer.parseInt(limitParam), 10000);
+            }
+            
+            int offset = 0;
+            String offsetParam = req.queryParams("offset");
+            if (offsetParam != null) {
+                offset = Integer.parseInt(offsetParam);
+            }
+            
+            // Sorting parameters
+            String sortBy = req.queryParams("sortBy");
+            String sortDir = req.queryParams("sortDir");
+            
+            // Get total count and list
+            final long totalCount = dao.count(filter);
+            final var list = dao.list(filter, limit, offset, sortBy, sortDir);
+
+            final var out = UserReadList.newBuilder()
+                .addAllUserReads(list)
+                .setTotalCount(totalCount)
+                .build();
+            res.type("application/x-protobuf");
+            return out.toByteArray();
+        });
+    }
+
     public void run() {
         addUserEndpoints();
         addArticleEndpoints();
         addReadEndpoints();
         addBeReadEndpoints();
         addPopularRankEndpoints();
+        addUserReadEndpoints();
     }
 
     public static void main(String[] args) {

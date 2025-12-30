@@ -8,6 +8,7 @@ import { tableConfig as articleConfig, decodeArticle, encodeArticle } from './ta
 import { tableConfig as readConfig, decodeRead, encodeRead } from './tables/read.js';
 import { tableConfig as bereadConfig, decodeBeRead, encodeBeRead } from './tables/beread.js';
 import { tableConfig as popularrankConfig, decodePopularRank, encodePopularRank } from './tables/popularrank.js';
+import { tableConfig as userreadConfig, decodeUserRead } from './tables/userread.js';
 
 // Server configuration for multi-region setup
 // In development: Vite proxies /api/cell1/*, /api/cell2/*, /api/cell3/* to respective servers
@@ -555,6 +556,43 @@ export async function deletePopularRank(id) {
     }
 }
 
+// ==================== UserRead API (Joined View) ====================
+
+/**
+ * Fetch user reads (joined view) with pagination and sorting.
+ * This view joins user and read tables, allowing filters on both.
+ * Filtering on region or uid allows Vitess to push queries to specific shards.
+ * 
+ * @returns {{ items: array, totalCount: number }}
+ */
+export async function fetchUserReads(rsqlFilter = null, limit = 100, offset = 0, sortBy = null, sortDir = null) {
+    const params = new URLSearchParams();
+    if (rsqlFilter) params.set('filter', rsqlFilter);
+    params.set('limit', limit.toString());
+    params.set('offset', offset.toString());
+    if (sortBy) params.set('sortBy', sortBy);
+    if (sortDir) params.set('sortDir', sortDir);
+    
+    let url = `${getApiBase()}/userreads`;
+    const queryString = params.toString();
+    if (queryString) url += `?${queryString}`;
+    
+    const response = await fetch(url, {
+        headers: {
+            'Accept': 'application/x-protobuf',
+        },
+    });
+    
+    if (!response.ok) {
+        throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+    }
+    
+    const buffer = await response.arrayBuffer();
+    const uint8 = new Uint8Array(buffer);
+    
+    return decodeListWithCount(uint8, decodeUserRead);
+}
+
 // ==================== Generic API Functions ====================
 
 // Map of table configs for easy lookup
@@ -564,6 +602,7 @@ export const tableConfigs = {
     reads: readConfig,
     bereads: bereadConfig,
     popularranks: popularrankConfig,
+    userreads: userreadConfig,
 };
 
 /**
@@ -577,6 +616,7 @@ export async function fetchData(tableName, rsqlFilter = null, limit = 100, offse
         case 'reads': return fetchReads(rsqlFilter, limit, offset, sortBy, sortDir);
         case 'bereads': return fetchBeReads(rsqlFilter, limit, offset, sortBy, sortDir);
         case 'popularranks': return fetchPopularRanks(rsqlFilter, limit, offset, sortBy, sortDir);
+        case 'userreads': return fetchUserReads(rsqlFilter, limit, offset, sortBy, sortDir);
         default: throw new Error(`Unknown table: ${tableName}`);
     }
 }
@@ -589,6 +629,7 @@ export async function updateData(tableName, data) {
         case 'reads': return updateRead(data);
         case 'bereads': return updateBeRead(data);
         case 'popularranks': return updatePopularRank(data);
+        case 'userreads': throw new Error('UserReads is a read-only view');
         default: throw new Error(`Unknown table: ${tableName}`);
     }
 }

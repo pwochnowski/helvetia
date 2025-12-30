@@ -70,6 +70,20 @@ java_proto_library(
     visibility = ["//visibility:public"],
 )
 
+# -------------------------
+# UserRead (joined view)
+# -------------------------
+proto_library(
+    name = "user_read_proto",
+    srcs = ["user_read.proto"],
+)
+
+java_proto_library(
+    name = "user_read_proto_java",
+    deps = [":user_read_proto"],
+    visibility = ["//visibility:public"],
+)
+
 # One proto_library that depends on all individual ones
 proto_library(
     name = "all_proto",
@@ -79,6 +93,7 @@ proto_library(
         ":read_proto",
         ":be_read_proto",
         ":popular_rank_proto",
+        ":user_read_proto",
     ],
 )
 

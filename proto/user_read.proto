@@ -1,0 +1,42 @@
+syntax = "proto3";
+
+package helvetia;
+
+option java_package = "helvetia";
+option java_multiple_files = true;
+
+// UserRead is a joined view of the user and read tables
+// It combines user information with their reading activity
+// The join is on uid and region, allowing Vitess to push queries down to shards
+message UserRead {
+  // Read table fields
+  int64 read_id = 1;
+  int64 read_timestamp = 2;
+  string uid = 3;
+  string aid = 4;
+  string region = 5;
+  int32 readTimeLength = 6;
+  bool agreeOrNot = 7;
+  bool commentOrNot = 8;
+  string commentDetail = 9;
+  bool shareOrNot = 10;
+  
+  // User table fields (prefixed with user_)
+  int64 user_id = 11;
+  int64 user_timestamp = 12;
+  string user_name = 13;
+  string user_gender = 14;
+  string user_email = 15;
+  string user_phone = 16;
+  string user_dept = 17;
+  string user_grade = 18;
+  string user_language = 19;
+  string user_role = 20;
+  repeated string user_preferTags = 21;
+  int32 user_obtainedCredits = 22;
+}
+
+message UserReadList {
+  repeated UserRead userReads = 1;
+  int64 totalCount = 2;
+}

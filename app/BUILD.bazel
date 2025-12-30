@@ -20,6 +20,7 @@ java_binary(
         "//proto:user_proto_java",
         "//proto:article_proto_java",
         "//proto:read_proto_java",
+        "//proto:user_read_proto_java",
         "//proto:be_read_proto_java",
         "//proto:popular_rank_proto_java",
         "@maven//:com_sparkjava_spark_core",
