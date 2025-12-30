@@ -87,4 +87,5 @@ exec $VTROOT/bin/vttablet \
   --backup-storage-implementation file \
   --file-backup-storage-root $VTDATAROOT/backups \
   --queryserver-config-schema-reload-time 60s \
+  --queryserver-config-max-result-size 100000 \
   $tablet_args
