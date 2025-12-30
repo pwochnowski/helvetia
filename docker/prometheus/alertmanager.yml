@@ -1,0 +1,20 @@
+global:
+  resolve_timeout: 1m
+  smtp_smarthost: 'smtp.gmail.com:587'
+  smtp_from: 'alerts@helvetia.local'
+  smtp_require_tls: true
+  smtp_auth_username: 'thomas0299@gmail.com'
+  smtp_auth_password: 'PASSWORD'  # Use an app password for Gmail
+
+route:
+  receiver: team-email
+  group_by: ['alertname']  # Group all instances of same alert type together
+  group_wait: 15s  # Wait 15s to batch alerts
+  group_interval: 1m  # Send grouped updates every 5m
+  repeat_interval: 4h  # Don't repeat resolved alerts for 4h
+
+receivers:
+  - name: team-email
+    email_configs:
+      - to: 'thomas0299@gmail.com'
+        send_resolved: true
