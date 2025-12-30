@@ -17,6 +17,15 @@
       },
       "owner": "popular_rank"
     },
+    "temporalgranularity_lookup": {
+      "type": "consistent_lookup",
+      "params": {
+        "table": "popularrank_keyspace.temporalgranularity_lookup",
+        "from": "temporalGranularity",
+        "to": "keyspace_id"
+      },
+      "owner": "popular_rank"
+    },
     "xxhash": {
       "type": "xxhash"
     }
@@ -31,6 +40,18 @@
         {
           "name": "popularrank_lookup",
           "columns": ["id"]
+        },
+        {
+          "name": "temporalgranularity_lookup",
+          "column": "temporalGranularity"
+        }
+      ]
+    },
+    "temporalgranularity_lookup": {
+      "column_vindexes": [
+        {
+          "column": "temporalGranularity",
+          "name": "xxhash"
         }
       ]
     },

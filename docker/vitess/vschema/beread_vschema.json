@@ -17,6 +17,15 @@
       },
       "owner": "beread"
     },
+    "category_lookup": {
+      "type": "consistent_lookup",
+      "params": {
+        "table": "beread_keyspace.category_lookup",
+        "from": "category",
+        "to": "keyspace_id"
+      },
+      "owner": "beread"
+    },
     "xxhash": {
       "type": "xxhash"
     }
@@ -31,6 +40,18 @@
         {
           "name": "beread_lookup",
           "columns": ["id"]
+        },
+        {
+          "name": "category_lookup",
+          "column": "category"
+        }
+      ]
+    },
+    "category_lookup": {
+      "column_vindexes": [
+        {
+          "column": "category",
+          "name": "xxhash"
         }
       ]
     },

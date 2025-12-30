@@ -19,3 +19,10 @@ CREATE TABLE IF NOT EXISTS `popularrank_lookup` (
   `keyspace_id` VARBINARY(128),
   PRIMARY KEY (`id`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+
+-- Lookup table for temporalGranularity-only queries (allows single-shard routing by temporalGranularity)
+CREATE TABLE IF NOT EXISTS `temporalgranularity_lookup` (
+  `temporalGranularity` VARCHAR(32) NOT NULL,
+  `keyspace_id` VARBINARY(128) NOT NULL,
+  PRIMARY KEY (`temporalGranularity`, `keyspace_id`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;

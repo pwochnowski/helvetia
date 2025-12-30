@@ -26,3 +26,10 @@ CREATE TABLE IF NOT EXISTS `read_lookup` (
   `keyspace_id` VARBINARY(128),
   PRIMARY KEY (`id`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+
+-- Lookup table for region-only queries (allows single-shard routing by region)
+CREATE TABLE IF NOT EXISTS `region_lookup` (
+  `region` VARCHAR(64) NOT NULL,
+  `keyspace_id` VARBINARY(128) NOT NULL,
+  PRIMARY KEY (`region`, `keyspace_id`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;

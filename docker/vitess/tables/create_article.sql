@@ -26,3 +26,10 @@ CREATE TABLE IF NOT EXISTS `article_lookup` (
   `keyspace_id` VARBINARY(128),
   PRIMARY KEY (`aid`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+
+-- Lookup table for category-only queries (allows single-shard routing by category)
+CREATE TABLE IF NOT EXISTS `category_lookup` (
+  `category` VARCHAR(64) NOT NULL,
+  `keyspace_id` VARBINARY(128) NOT NULL,
+  PRIMARY KEY (`category`, `keyspace_id`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;

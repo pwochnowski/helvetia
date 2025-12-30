@@ -17,6 +17,15 @@
       },
       "owner": "user"
     },
+    "region_lookup": {
+      "type": "consistent_lookup",
+      "params": {
+        "table": "user_keyspace.region_lookup",
+        "from": "region",
+        "to": "keyspace_id"
+      },
+      "owner": "user"
+    },
     "xxhash": {
       "type": "xxhash"
     }
@@ -31,6 +40,18 @@
         {
           "name": "user_lookup",
           "columns": ["uid"]
+        },
+        {
+          "name": "region_lookup",
+          "column": "region"
+        }
+      ]
+    },
+    "region_lookup": {
+      "column_vindexes": [
+        {
+          "column": "region",
+          "name": "xxhash"
         }
       ]
     },

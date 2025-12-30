@@ -8,11 +8,11 @@
         "region_bytes": "1"
       }
     },
-    "read_lookup": {
-      "type": "consistent_lookup_unique",
+    "region_lookup": {
+      "type": "consistent_lookup",
       "params": {
-        "table": "read_keyspace.read_lookup",
-        "from": "id",
+        "table": "read_keyspace.region_lookup",
+        "from": "region",
         "to": "keyspace_id"
       },
       "owner": "read"
@@ -29,15 +29,15 @@
           "columns": ["id", "region"]
         },
         {
-          "name": "read_lookup",
-          "columns": ["id"]
+          "name": "region_lookup",
+          "column": "region"
         }
       ]
     },
-    "read_lookup": {
+    "region_lookup": {
       "column_vindexes": [
         {
-          "column": "id",
+          "column": "region",
           "name": "xxhash"
         }
       ]

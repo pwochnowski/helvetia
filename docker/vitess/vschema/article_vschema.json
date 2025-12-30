@@ -17,6 +17,15 @@
       },
       "owner": "article"
     },
+    "category_lookup": {
+      "type": "consistent_lookup",
+      "params": {
+        "table": "article_keyspace.category_lookup",
+        "from": "category",
+        "to": "keyspace_id"
+      },
+      "owner": "article"
+    },
     "xxhash": {
       "type": "xxhash"
     }
@@ -31,6 +40,18 @@
         {
           "name": "article_lookup",
           "columns": ["aid"]
+        },
+        {
+          "name": "category_lookup",
+          "column": "category"
+        }
+      ]
+    },
+    "category_lookup": {
+      "column_vindexes": [
+        {
+          "column": "category",
+          "name": "xxhash"
         }
       ]
     },
