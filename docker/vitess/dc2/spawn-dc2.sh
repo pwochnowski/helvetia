@@ -24,6 +24,10 @@ echo "=== Step 2: Start DC2 cluster ==="
 docker compose -f docker-compose-dc2.yml up -d
 
 echo ""
+echo "=== Step 3: Restart VTAdmin with DC2 enabled ==="
+ENABLE_DC2=true docker compose -f ../docker-compose.yml up -d vtadmin-api
+
+echo ""
 echo "=== DC2 is starting ==="
 echo "Tablets will automatically restore from DC1 backups."
 echo ""
