@@ -1,7 +1,7 @@
 import { createGrid, ModuleRegistry, AllCommunityModule } from 'ag-grid-community';
 import 'ag-grid-community/styles/ag-grid.css';
 import 'ag-grid-community/styles/ag-theme-alpine.css';
-import { fetchData, updateData, tableConfigs, setServer, getCurrentServer } from './api.js';
+import { fetchData, updateData, createData, canCreateEntry, tableConfigs, setServer, getCurrentServer } from './api.js';
 import { filterModelToRsql, parseRsqlForDisplay } from './rsql.js';
 import './articlePopup.js'; // Initialize article popup
 
@@ -226,6 +226,7 @@ function switchTable(tableName) {
     // Update UI
     updateTitle();
     updateActiveTabs();
+    updateAddButtonVisibility();
     
     // Update grid columns
     gridApi.setGridOption('columnDefs', config.columnDefs);
@@ -291,6 +292,7 @@ function initGrid() {
     
     updateTitle();
     updateActiveTabs();
+    updateAddButtonVisibility();
 }
 
 // Set up tab click handlers
@@ -304,6 +306,146 @@ function initTabs() {
 
 // Track current datacenter
 let currentDataCenter = 'dc1';
+
+// Update add button visibility based on current table
+function updateAddButtonVisibility() {
+    const addBtn = document.getElementById('add-btn');
+    if (addBtn) {
+        addBtn.classList.toggle('hidden', !canCreateEntry(currentTable));
+    }
+}
+
+// Form field definitions for each table
+const formFields = {
+    users: [
+        { name: 'uid', label: 'User ID', type: 'text', required: true, hint: 'Unique user identifier (e.g., u123)', placeholder: () => `u${Math.floor(Math.random() * 900000 + 100000)}` },
+        { name: 'name', label: 'Name', type: 'text', required: true, placeholder: () => ['Alice Chen', 'Bob Wang', 'Charlie Li', 'Diana Zhang', 'Edward Liu', 'Fiona Wu'][Math.floor(Math.random() * 6)] },
+        { name: 'gender', label: 'Gender', type: 'select', options: ['male', 'female', 'other'], defaultOption: () => ['male', 'female'][Math.floor(Math.random() * 2)] },
+        { name: 'email', label: 'Email', type: 'email', placeholder: () => `user${Math.floor(Math.random() * 9000 + 1000)}@example.com` },
+        { name: 'phone', label: 'Phone', type: 'text', placeholder: () => `1${Math.floor(Math.random() * 9000000000 + 1000000000)}` },
+        { name: 'dept', label: 'Department', type: 'text', placeholder: () => ['Engineering', 'Marketing', 'Sales', 'Research', 'Finance'][Math.floor(Math.random() * 5)] },
+        { name: 'grade', label: 'Grade', type: 'text', placeholder: () => ['Junior', 'Senior', 'Lead', 'Manager', 'Director'][Math.floor(Math.random() * 5)] },
+        { name: 'language', label: 'Language', type: 'select', options: ['en', 'zh'], required: true, defaultOption: () => ['en', 'zh'][Math.floor(Math.random() * 2)] },
+        { name: 'region', label: 'Region', type: 'select', options: ['Beijing', 'HongKong'], required: true, hint: 'Determines which shard stores the data', defaultOption: () => ['Beijing', 'HongKong'][Math.floor(Math.random() * 2)] },
+        { name: 'role', label: 'Role', type: 'text', placeholder: () => ['reader', 'writer', 'admin', 'guest'][Math.floor(Math.random() * 4)] },
+        { name: 'preferTags', label: 'Preferred Tags', type: 'text', hint: 'Comma-separated tags', placeholder: () => ['technology, science', 'sports, health', 'finance, business', 'entertainment, music'][Math.floor(Math.random() * 4)] },
+        { name: 'obtainedCredits', label: 'Credits', type: 'number', placeholder: () => Math.floor(Math.random() * 1000) },
+    ],
+    articles: [
+        { name: 'aid', label: 'Article ID', type: 'text', required: true, hint: 'Unique article identifier (e.g., a123)', placeholder: () => `a${Math.floor(Math.random() * 900000 + 100000)}` },
+        { name: 'title', label: 'Title', type: 'text', required: true, placeholder: () => ['Breaking News Today', 'New Research Findings', 'Tech Industry Update', 'Market Analysis Report', 'Scientific Discovery'][Math.floor(Math.random() * 5)] },
+        { name: 'category', label: 'Category', type: 'select', options: ['science', 'technology'], required: true, hint: 'Determines which shard stores the data', defaultOption: () => ['science', 'technology'][Math.floor(Math.random() * 2)] },
+        { name: 'abstract', label: 'Abstract', type: 'textarea', placeholder: () => 'This article discusses the latest developments in the field and provides insights into future trends.' },
+        { name: 'articleTags', label: 'Tags', type: 'text', hint: 'Comma-separated tags', placeholder: () => ['research, innovation', 'analysis, trends', 'breaking, news'][Math.floor(Math.random() * 3)] },
+        { name: 'authors', label: 'Authors', type: 'text', hint: 'Comma-separated author names', placeholder: () => ['John Smith, Jane Doe', 'Dr. Chen Wei', 'Research Team A'][Math.floor(Math.random() * 3)] },
+        { name: 'language', label: 'Language', type: 'select', options: ['en', 'zh'], defaultOption: () => ['en', 'zh'][Math.floor(Math.random() * 2)] },
+    ],
+    reads: [
+        { name: 'uid', label: 'User ID', type: 'text', required: true, hint: 'ID of the user who read the article', placeholder: () => `u${Math.floor(Math.random() * 1000 + 1)}` },
+        { name: 'aid', label: 'Article ID', type: 'text', required: true, hint: 'ID of the article that was read', placeholder: () => `a${Math.floor(Math.random() * 1000 + 1)}` },
+        { name: 'region', label: 'Region', type: 'select', options: ['Beijing', 'HongKong'], required: true, hint: 'Determines which shard stores the data', defaultOption: () => ['Beijing', 'HongKong'][Math.floor(Math.random() * 2)] },
+        { name: 'readTimeLength', label: 'Read Time (seconds)', type: 'number', placeholder: () => Math.floor(Math.random() * 300 + 30) },
+        { name: 'agreeOrNot', label: 'Agreed', type: 'select', options: ['true', 'false'], defaultOption: () => ['true', 'false'][Math.floor(Math.random() * 2)] },
+        { name: 'commentOrNot', label: 'Commented', type: 'select', options: ['true', 'false'], defaultOption: () => ['true', 'false'][Math.floor(Math.random() * 2)] },
+        { name: 'commentDetail', label: 'Comment', type: 'textarea', placeholder: () => ['Great article!', 'Very informative read.', 'Interesting perspective.', 'Could use more details.'][Math.floor(Math.random() * 4)] },
+        { name: 'shareOrNot', label: 'Shared', type: 'select', options: ['true', 'false'], defaultOption: () => ['true', 'false'][Math.floor(Math.random() * 2)] },
+    ],
+};
+
+// Open the add entry modal
+function addNewEntry() {
+    if (!canCreateEntry(currentTable)) {
+        showStatus('Cannot add entries to derived/read-only tables', 'error');
+        return;
+    }
+    
+    const config = getTableConfig();
+    const modal = document.getElementById('add-modal');
+    const title = document.getElementById('modal-title');
+    const form = document.getElementById('add-form');
+    
+    title.textContent = `Add New ${config.title.replace(' Management', '').replace(' Records', '')}`;
+    
+    // Build form fields with pre-filled random values
+    const fields = formFields[currentTable] || [];
+    form.innerHTML = fields.map(field => {
+        const required = field.required ? '<span class="required">*</span>' : '';
+        const hint = field.hint ? `<div class="hint">${field.hint}</div>` : '';
+        const defaultValue = field.placeholder ? field.placeholder() : '';
+        
+        let input;
+        if (field.type === 'select') {
+            // For select, pre-select a random option if there's a default
+            const options = field.options.map(opt => {
+                const selected = (field.defaultOption && opt === field.defaultOption()) ? 'selected' : '';
+                return `<option value="${opt}" ${selected}>${opt}</option>`;
+            }).join('');
+            input = `<select name="${field.name}" id="field-${field.name}" ${field.required ? 'required' : ''}><option value="">Select...</option>${options}</select>`;
+        } else if (field.type === 'textarea') {
+            input = `<textarea name="${field.name}" id="field-${field.name}" rows="3" ${field.required ? 'required' : ''}>${defaultValue}</textarea>`;
+        } else {
+            input = `<input type="${field.type}" name="${field.name}" id="field-${field.name}" ${field.required ? 'required' : ''} value="${defaultValue}">`;
+        }
+        
+        return `<div class="form-group"><label for="field-${field.name}">${field.label} ${required}</label>${input}${hint}</div>`;
+    }).join('');
+    
+    modal.classList.add('visible');
+}
+
+// Close the add entry modal
+function closeAddModal() {
+    const modal = document.getElementById('add-modal');
+    modal.classList.remove('visible');
+}
+
+// Submit the new entry
+async function submitNewEntry() {
+    const form = document.getElementById('add-form');
+    const formData = new FormData(form);
+    
+    // Build the data object
+    const data = {};
+    const fields = formFields[currentTable] || [];
+    
+    for (const field of fields) {
+        let value = formData.get(field.name);
+        
+        if (value === '' || value === null) {
+            if (field.required) {
+                showStatus(`${field.label} is required`, 'error');
+                return;
+            }
+            continue;
+        }
+        
+        // Type conversions
+        if (field.type === 'number') {
+            value = parseInt(value, 10) || 0;
+        } else if (field.name === 'agreeOrNot' || field.name === 'commentOrNot' || field.name === 'shareOrNot') {
+            value = value === 'true';
+        } else if (field.name === 'preferTags' || field.name === 'articleTags' || field.name === 'authors') {
+            value = value.split(',').map(s => s.trim()).filter(s => s);
+        }
+        
+        data[field.name] = value;
+    }
+    
+    // Add timestamp
+    data.timestamp = Date.now();
+    
+    try {
+        showStatus('Creating entry...', 'loading');
+        await createData(currentTable, data);
+        closeAddModal();
+        showStatus('Entry created successfully', 'success');
+        // Reload the data to show the new entry
+        await loadData();
+    } catch (error) {
+        console.error('Failed to create entry:', error);
+        showStatus(`Failed to create: ${error.message}`, 'error');
+    }
+}
 
 // Switch datacenter toggle
 function switchDataCenter(dc) {
@@ -371,6 +513,9 @@ window.exportData = exportData;
 window.switchTable = switchTable;
 window.switchServer = switchServer;
 window.switchDataCenter = switchDataCenter;
+window.addNewEntry = addNewEntry;
+window.closeAddModal = closeAddModal;
+window.submitNewEntry = submitNewEntry;
 
 // Initialize on DOM ready
 if (document.readyState === 'loading') {

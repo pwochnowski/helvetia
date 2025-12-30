@@ -454,6 +454,108 @@
                 max-height: 90vh;
             }
         }
+        /* Add Entry Modal Styles */
+        .modal-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: rgba(0, 0, 0, 0.5);
+            display: none;
+            justify-content: center;
+            align-items: center;
+            z-index: 1000;
+        }
+        .modal-overlay.visible {
+            display: flex;
+        }
+        .modal-content {
+            background: white;
+            border-radius: 12px;
+            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3);
+            max-width: 600px;
+            max-height: 85vh;
+            width: 90%;
+            overflow: hidden;
+            display: flex;
+            flex-direction: column;
+        }
+        .modal-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 16px 20px;
+            border-bottom: 1px solid #e0e0e0;
+            background: #f8f9fa;
+        }
+        .modal-header h3 {
+            margin: 0;
+            font-size: 18px;
+            color: #333;
+        }
+        .modal-close {
+            background: none;
+            border: none;
+            font-size: 28px;
+            cursor: pointer;
+            color: #666;
+            line-height: 1;
+            padding: 0 8px;
+        }
+        .modal-close:hover {
+            color: #333;
+        }
+        .modal-body {
+            padding: 20px;
+            overflow-y: auto;
+            flex: 1;
+        }
+        .modal-footer {
+            display: flex;
+            justify-content: flex-end;
+            gap: 10px;
+            padding: 16px 20px;
+            border-top: 1px solid #e0e0e0;
+            background: #f8f9fa;
+        }
+        .form-group {
+            margin-bottom: 15px;
+        }
+        .form-group label {
+            display: block;
+            margin-bottom: 5px;
+            font-weight: 500;
+            color: #333;
+            font-size: 14px;
+        }
+        .form-group label .required {
+            color: #dc3545;
+        }
+        .form-group input,
+        .form-group select,
+        .form-group textarea {
+            width: 100%;
+            padding: 8px 12px;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            font-size: 14px;
+        }
+        .form-group input:focus,
+        .form-group select:focus,
+        .form-group textarea:focus {
+            outline: none;
+            border-color: #4a90d9;
+            box-shadow: 0 0 0 2px rgba(74, 144, 217, 0.2);
+        }
+        .form-group .hint {
+            font-size: 12px;
+            color: #666;
+            margin-top: 4px;
+        }
+        #add-btn.hidden {
+            display: none;
+        }
     </style>
 </head>
 <body>
@@ -492,11 +594,29 @@
         
         <div class="toolbar">
             <button class="btn-primary" onclick="loadData()">🔄 Refresh</button>
+            <button id="add-btn" class="btn-primary" onclick="addNewEntry()" style="background: #28a745;">➕ Add</button>
             <button class="btn-secondary" onclick="exportData()">📥 Export CSV</button>
             <div id="status" class="status" style="display: none;"></div>
         </div>
         
         <div id="grid-container"></div>
+        <!-- Add Entry Modal -->
+        <div id="add-modal" class="modal-overlay">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h3 id="modal-title">Add New Entry</h3>
+                    <button class="modal-close" onclick="closeAddModal()">&times;</button>
+                </div>
+                <div class="modal-body">
+                    <form id="add-form"></form>
+                </div>
+                <div class="modal-footer">
+                    <button class="btn-secondary" onclick="closeAddModal()">Cancel</button>
+                    <button class="btn-primary" onclick="submitNewEntry()" style="background: #28a745;">Create</button>
+                </div>
+            </div>
+        </div>
+
         <div class="footer-bar">
             <div id="row-count" class="row-count"></div>
             <div class="pagination-controls">

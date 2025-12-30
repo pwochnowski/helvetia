@@ -633,3 +633,21 @@ export async function updateData(tableName, data) {
         default: throw new Error(`Unknown table: ${tableName}`);
     }
 }
+
+// Generic create function
+export async function createData(tableName, data) {
+    switch (tableName) {
+        case 'users': return createUser(data);
+        case 'articles': return createArticle(data);
+        case 'reads': return createRead(data);
+        case 'bereads': throw new Error('BeReads is a derived table');
+        case 'popularranks': throw new Error('PopularRanks is a derived table');
+        case 'userreads': throw new Error('UserReads is a read-only view');
+        default: throw new Error(`Unknown table: ${tableName}`);
+    }
+}
+
+// Check if a table supports creating new entries
+export function canCreateEntry(tableName) {
+    return ['users', 'articles', 'reads'].includes(tableName);
+}
