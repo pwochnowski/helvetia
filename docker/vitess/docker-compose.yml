@@ -673,7 +673,7 @@ services:
     volumes:
       - ../prometheus/prometheus.yml:/etc/prometheus/prometheus.yml
       - /var/run/docker.sock:/var/run/docker.sock:ro
-      - ./docker/vitess/prometheus-rules.yml:/etc/prometheus/rules
+      - ../prometheus/prometheus-rules.yml:/etc/prometheus/rules
     ports:
       - 9090:9090
     networks:

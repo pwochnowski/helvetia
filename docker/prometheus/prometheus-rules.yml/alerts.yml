@@ -1,0 +1,78 @@
+groups:
+  - name: vitess_alerts
+    rules:
+      # Tablet health alerts
+      # - alert: VitessTabletDown
+      #   expr: up{job=~".*vttablet.*"} == 0
+      #   for: 1m
+      #   labels:
+      #     severity: critical
+      #   annotations:
+      #     summary: "Vitess tablet is down"
+      #     description: "Tablet {{ $labels.instance }} has been down for more than 1 minute."
+
+      # - alert: VitessTabletUnhealthy
+      #   expr: vttablet_health_check_errors_total > 0
+      #   for: 2m
+      #   labels:
+      #     severity: warning
+      #   annotations:
+      #     summary: "Vitess tablet health check errors"
+      #     description: "Tablet {{ $labels.instance }} is experiencing health check errors."
+
+      # # VTGate alerts
+      # - alert: VitessVTGateDown
+      #   expr: up{job=~".*vtgate.*"} == 0
+      #   for: 1m
+      #   labels:
+      #     severity: critical
+      #   annotations:
+      #     summary: "Vitess VTGate is down"
+      #     description: "VTGate {{ $labels.instance }} has been down for more than 1 minute."
+
+      # - alert: VitessHighQueryLatency
+      #   expr: histogram_quantile(0.99, rate(vtgate_queries_bucket[5m])) > 1
+      #   for: 5m
+      #   labels:
+      #     severity: warning
+      #   annotations:
+      #     summary: "High query latency on VTGate"
+      #     description: "99th percentile query latency is above 1 second on {{ $labels.instance }}."
+
+      # Container resource alerts
+      - alert: HighTabletCPU
+        expr: sum by (keyspace, shard, role) (rate(container_cpu_usage_seconds_total{container_group="vttablet"}[10s])) * 100 > 50
+        for: 15s
+        labels:
+          severity: warning
+        annotations:
+          summary: "High CPU usage on VTTablet"
+          description: "Tablet {{ $labels.keyspace }}/{{ $labels.shard }} ({{ $labels.role }}) CPU usage is above 50% (current: {{ $value | printf \"%.1f\" }}%)."
+
+      # - alert: HighContainerMemory
+      #   expr: container_memory_usage_bytes{name=~"vitess-.*"} / container_spec_memory_limit_bytes{name=~"vitess-.*"} * 100 > 80
+      #   for: 5m
+      #   labels:
+      #     severity: warning
+      #   annotations:
+      #     summary: "High memory usage on Vitess container"
+      #     description: "Container {{ $labels.name }} memory usage is above 80%."
+
+      # # Replication alerts
+      # - alert: VitessReplicationLag
+      #   expr: vttablet_replication_lag_seconds > 10
+      #   for: 2m
+      #   labels:
+      #     severity: warning
+      #   annotations:
+      #     summary: "Vitess replication lag detected"
+      #     description: "Tablet {{ $labels.instance }} has replication lag of {{ $value }} seconds."
+
+      # - alert: VitessReplicationLagCritical
+      #   expr: vttablet_replication_lag_seconds > 60
+      #   for: 1m
+      #   labels:
+      #     severity: critical
+      #   annotations:
+      #     summary: "Critical Vitess replication lag"
+      #     description: "Tablet {{ $labels.instance }} has critical replication lag of {{ $value }} seconds."
