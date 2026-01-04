@@ -226,11 +226,6 @@ public class UserReadDaoImpl implements UserReadDao {
     
     @Override
     public long count(String rsqlFilter) throws Exception {
-        // Only do expensive cross-shard count if filtering by region
-        // Without region filter, the join scatters to all shards and can exceed row limits
-        if (!hasRegionFilter(rsqlFilter)) {
-            return PLACEHOLDER_COUNT;
-        }
         
         StringBuilder sql = new StringBuilder();
         sql.append("SELECT COUNT(*) ");
