@@ -724,6 +724,17 @@ services:
     networks:
       - vitess_net
 
+  # ===========================================
+  # REDIS - Caching Layer
+  # ===========================================
+  redis:
+    image: redis:7-alpine
+    container_name: redis
+    ports:
+      - "6379:6379"
+    networks:
+      - vitess_net
+
 networks:
   vitess_net:
     driver: bridge
