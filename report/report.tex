@@ -1,11 +1,14 @@
 \documentclass{article}
 \usepackage{graphicx} % Required for inserting images
 \usepackage{natbib}
+\usepackage{hyperref}
 \bibliographystyle{plain}
 
 \title{Distributed Database using Vitess}
 \author{Paul Wochnowski, Thomas Adler}
-\date{December 2025}
+\date{December 2025\\
+\href{https://github.com/pwochnowski/helvetia}{https://github.com/pwochnowski/helvetia}}
+
 
 \begin{document}
 
@@ -31,7 +34,7 @@ The target architecture consists of two geographically distributed sites (DBMS1 
 \begin{figure}[htbp]
   \centering
   \includegraphics[width=0.9\textwidth]{figures/architecture-overview.png}
-  \caption{High-level architecture showing two data centers with application servers, caching layers, database instances (including standby replicas), and shared HDFS storage.}
+    \caption{High-level architecture showing a DDBMS distributed across two sites each with an application servers, caching layers, database instances (including standby replicas), and a shared HDFS storage.}
   \label{fig:architecture-overview}
 \end{figure}
 
@@ -199,14 +202,26 @@ To prevent data loss during failover, Vitess leverages MySQL's semi-synchronous 
 
 \subsection{Bulk Data Loading}
 
-The system supports bulk loading of the User, Article, and Read tables with 10,000, 10,000, and 50,000 records respectively. A Python script connects to VTGate and issues batched multi-row INSERT statements, with VTGate automatically routing each record to the appropriate shard based on the configured vindexes. The script disables constraint checks (\texttt{unique\_checks=0}, \texttt{foreign\_key\_checks=0}) during loading to reduce per-row overhead.
+The system supports bulk loading of the User, Article, and Read tables with 10,000, 10,000, and 50,000 records respectively. A Python script connects to VTGate and issues batched multi-row INSERT statements, with VTGate automatically routing each record to the appropriate shard based on the configured vindexes. The script disables constraint checks during loading to reduce per-row overhead.
 
-To maximize throughput, a wrapper script temporarily disables semi-synchronous replication on all primary tablets before invoking the bulk insert. This eliminates the per-commit latency of waiting for replica acknowledgment, allowing writes to complete immediately. After the bulk load finishes, the wrapper re-enables semi-sync to restore durability guarantees for normal operations.
+Table~\ref{tab:bulk-load-performance} presents the measured bulk loading performance. The User and Article tables achieve throughput exceeding 8,500 records per second, while Read throughput is lower due to larger record size and the higher volume requiring more batch operations. The total load time for all 70,000 records is approximately 30 seconds, yielding an aggregate throughput of 2,296 records per second.
 
-% TODO: Add timing results
-% - Total load time: X seconds
-% - Throughput: X records/second
-% - Comparison with/without semi-sync disabled
+\begin{table}[htbp]
+\centering
+\caption{Bulk loading performance measurements}
+\label{tab:bulk-load-performance}
+\begin{tabular}{|l|r|r|r|}
+\hline
+\textbf{Table} & \textbf{Records} & \textbf{Time (s)} & \textbf{Throughput (rec/s)} \\
+\hline
+User & 10,000 & 1.16 & 8,624 \\
+Article & 10,000 & 1.14 & 8,784 \\
+Read & 50,000 & 28.19 & 1,773 \\
+\hline
+\textbf{Total} & \textbf{70,000} & \textbf{30.49} & \textbf{2,296} \\
+\hline
+\end{tabular}
+\end{table}
 
 \subsection{CRUD Operations}
 
@@ -242,11 +257,23 @@ Metrics are collected from two sources. Container-level metrics (CPU, memory, ne
 
 Grafana connects to Prometheus and provides real-time visualization of cluster health, query performance, and resource utilization across all tablets and gateways.
 
-% TODO: Add figure showing Grafana dashboard
-
 \subsubsection{Alerting}
 
 Prometheus evaluates alerting rules and forwards triggered alerts to Alertmanager, which handles deduplication, grouping, and notification routing. Example rules include high CPU usage on tablets and replication lag thresholds. Alertmanager can be configured to deliver notifications via email, Slack, or other channels.
+
+\begin{figure}[htbp]
+  \centering
+  \includegraphics[width=\textwidth]{figures/grafana-containers.png}
+  \caption{Grafana dashboard showing container-level metrics including CPU usage, memory consumption, network I/O, and disk I/O across all Vitess tablets during a bulk load followed by heavy query workload.}
+  \label{fig:grafana-containers}
+\end{figure}
+
+\begin{figure}[htbp]
+  \centering
+  \includegraphics[width=\textwidth]{figures/grafana-keyspaces.png}
+  \caption{Grafana dashboard showing queries per second (QPS) by keyspace, illustrating the load distribution across Article, Read, User, BeRead, and PopularRank keyspaces during bulk operations and subsequent query stress testing.}
+  \label{fig:grafana-keyspaces}
+\end{figure}
 
 \subsection{Fault Tolerance and Cluster Elasticity}
 
