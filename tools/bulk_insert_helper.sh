@@ -165,8 +165,9 @@ verify_counts() {
 main() {
     check_vitess
 
-    # Set durability to none for faster writes
+    # Disable semi-sync replication for faster bulk writes
     # set_durability_policy "none"
+    # set_durability_policy "semi_sync"
     
     # Run the bulk insert
     run_bulk_insert
@@ -174,8 +175,9 @@ main() {
     # Populate derived tables
     populate_derived_tables
     
-    # Restore durability policy
+    # Restore semi-sync durability policy (this only works if the backup tablets are running)
     # set_durability_policy "semi_sync"
+    # set_durability_policy "none"
     
     # Verify
     verify_counts

@@ -16,6 +16,7 @@ import argparse
 import json
 import random
 import string
+import time
 from datetime import datetime, timedelta
 from typing import Generator, Dict, Any, List, Tuple
 
@@ -460,6 +461,7 @@ def main():
         
         if args.truncate:
             truncate_table(read_conn, read_cursor, "read")
+            truncate_table(read_conn, read_cursor, "region_lookup")
         
         # Insert reads (need users and articles generated first, so do this last)
         # For now, just prepare the connection
@@ -473,13 +475,18 @@ def main():
         
         if args.truncate:
             truncate_table(user_conn, user_cursor, "user")
+            truncate_table(user_conn, user_cursor, "user_lookup")
+            truncate_table(user_conn, user_cursor, "region_lookup")
         
         print("  Inserting users...")
+        user_start_time = time.perf_counter()
         for batch in batch_generator(gen_user, args.users, USER_BATCH_SIZE, base_time=base_time):
             user_count += bulk_insert_users(user_cursor, batch)
             user_conn.commit()
             print_progress(user_count, args.users, "Users")
-        print(f"\n  ✓ Inserted {user_count:,} users")
+        user_elapsed = time.perf_counter() - user_start_time
+        user_throughput = user_count / user_elapsed if user_elapsed > 0 else 0
+        print(f"\n  ✓ Inserted {user_count:,} users in {user_elapsed:.2f}s ({user_throughput:.1f} records/s)")
         
         restore_connection(user_cursor)
         user_cursor.close()
@@ -495,13 +502,18 @@ def main():
         
         if args.truncate:
             truncate_table(article_conn, article_cursor, "article")
+            truncate_table(article_conn, article_cursor, "article_lookup")
+            truncate_table(article_conn, article_cursor, "category_lookup")
         
         print("  Inserting articles...")
+        article_start_time = time.perf_counter()
         for batch in batch_generator(gen_article, args.articles, ARTICLE_BATCH_SIZE, base_time=base_time, articles_count=args.articles):
             article_count += bulk_insert_articles(article_cursor, batch)
             article_conn.commit()
             print_progress(article_count, args.articles, "Articles")
-        print(f"\n  ✓ Inserted {article_count:,} articles")
+        article_elapsed = time.perf_counter() - article_start_time
+        article_throughput = article_count / article_elapsed if article_elapsed > 0 else 0
+        print(f"\n  ✓ Inserted {article_count:,} articles in {article_elapsed:.2f}s ({article_throughput:.1f} records/s)")
         
         restore_connection(article_cursor)
         article_cursor.close()
@@ -510,22 +522,37 @@ def main():
         
         # Now insert reads (users and articles are populated)
         print("  Inserting reads...")
+        read_start_time = time.perf_counter()
         for batch in batch_generator(gen_read, args.reads, READ_BATCH_SIZE,
                                      base_time=base_time, users_count=args.users, articles_count=args.articles, reads_count=args.reads):
             read_count += bulk_insert_reads(read_cursor, batch)
             read_conn.commit()
             print_progress(read_count, args.reads, "Reads")
-        print(f"\n  ✓ Inserted {read_count:,} reads")
+        read_elapsed = time.perf_counter() - read_start_time
+        read_throughput = read_count / read_elapsed if read_elapsed > 0 else 0
+        print(f"\n  ✓ Inserted {read_count:,} reads in {read_elapsed:.2f}s ({read_throughput:.1f} records/s)")
         
         restore_connection(read_cursor)
         read_cursor.close()
         read_conn.close()
         connections.remove(read_conn)
         
+        # Calculate totals
+        total_records = user_count + article_count + read_count
+        total_time = user_elapsed + article_elapsed + read_elapsed
+        total_throughput = total_records / total_time if total_time > 0 else 0
+        
         print("\n" + "=" * 60)
         print("BULK INSERT COMPLETE")
         print("=" * 60)
-        print(f"Total records: {user_count + article_count + read_count:,}")
+        print(f"{'Table':<12} {'Records':>10} {'Time (s)':>10} {'Throughput':>15}")
+        print("-" * 60)
+        print(f"{'Users':<12} {user_count:>10,} {user_elapsed:>10.2f} {user_throughput:>12.1f}/s")
+        print(f"{'Articles':<12} {article_count:>10,} {article_elapsed:>10.2f} {article_throughput:>12.1f}/s")
+        print(f"{'Reads':<12} {read_count:>10,} {read_elapsed:>10.2f} {read_throughput:>12.1f}/s")
+        print("-" * 60)
+        print(f"{'TOTAL':<12} {total_records:>10,} {total_time:>10.2f} {total_throughput:>12.1f}/s")
+        print("=" * 60)
         
     except Error as e:
         print(f"\nDatabase error: {e}")
