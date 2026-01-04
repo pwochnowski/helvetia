@@ -42,6 +42,10 @@ x-vttablet-env-base: &vttablet-env-base
   DB_PASS: ""
   DB_CHARSET: ""
 
+x-vttablet-env-backup: &vttablet-env-backup
+  <<: *vttablet-env-base
+  RESTORE_FROM_BACKUP: "1"
+
 services:
   # ===========================================
   # TOPOLOGY SERVICE (Consul Cluster)
@@ -78,6 +82,7 @@ services:
       - "15999"
     volumes:
       - .:/script
+      - vitess_backups:/vt/vtdataroot/backups
     networks:
       - vitess_net
 
@@ -234,7 +239,7 @@ services:
     <<: *vttablet-base
     profiles: [backup]
     environment:
-      <<: *vttablet-env-base
+      <<: *vttablet-env-backup
       TABLET_UID: 102
       CELL: cell3
       KEYSPACE: user_keyspace
@@ -263,7 +268,7 @@ services:
     <<: *vttablet-base
     profiles: [backup]
     environment:
-      <<: *vttablet-env-base
+      <<: *vttablet-env-backup
       TABLET_UID: 602
       CELL: cell3
       KEYSPACE: user_keyspace
@@ -309,7 +314,7 @@ services:
     <<: *vttablet-base
     profiles: [backup]
     environment:
-      <<: *vttablet-env-base
+      <<: *vttablet-env-backup
       TABLET_UID: 202
       CELL: cell3
       KEYSPACE: article_keyspace
@@ -339,7 +344,7 @@ services:
     <<: *vttablet-base
     profiles: [backup]
     environment:
-      <<: *vttablet-env-base
+      <<: *vttablet-env-backup
       TABLET_UID: 712
       CELL: cell3
       KEYSPACE: article_keyspace
@@ -369,7 +374,7 @@ services:
     <<: *vttablet-base
     profiles: [backup]
     environment:
-      <<: *vttablet-env-base
+      <<: *vttablet-env-backup
       TABLET_UID: 302
       CELL: cell3
       KEYSPACE: read_keyspace
@@ -398,7 +403,7 @@ services:
     <<: *vttablet-base
     profiles: [backup]
     environment:
-      <<: *vttablet-env-base
+      <<: *vttablet-env-backup
       TABLET_UID: 802
       CELL: cell3
       KEYSPACE: read_keyspace
@@ -443,7 +448,7 @@ services:
     <<: *vttablet-base
     profiles: [backup]
     environment:
-      <<: *vttablet-env-base
+      <<: *vttablet-env-backup
       TABLET_UID: 402
       CELL: cell3
       KEYSPACE: beread_keyspace
@@ -472,7 +477,7 @@ services:
     <<: *vttablet-base
     profiles: [backup]
     environment:
-      <<: *vttablet-env-base
+      <<: *vttablet-env-backup
       TABLET_UID: 912
       CELL: cell3
       KEYSPACE: beread_keyspace
@@ -506,7 +511,7 @@ services:
     <<: *vttablet-base
     profiles: [backup]
     environment:
-      <<: *vttablet-env-base
+      <<: *vttablet-env-backup
       TABLET_UID: 502
       CELL: cell3
       KEYSPACE: popularrank_keyspace
@@ -535,7 +540,7 @@ services:
     <<: *vttablet-base
     profiles: [backup]
     environment:
-      <<: *vttablet-env-base
+      <<: *vttablet-env-backup
       TABLET_UID: 1002
       CELL: cell3
       KEYSPACE: popularrank_keyspace
@@ -564,7 +569,7 @@ services:
     <<: *vttablet-base
     profiles: [backup]
     environment:
-      <<: *vttablet-env-base
+      <<: *vttablet-env-backup
       TABLET_UID: 1012
       CELL: cell3
       KEYSPACE: popularrank_keyspace

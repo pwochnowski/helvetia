@@ -7,6 +7,7 @@
 #   ./backup-tablets.sh stop    # Stop backup tablets (keep containers)
 #   ./backup-tablets.sh restart # Restart backup tablets
 #   ./backup-tablets.sh status  # Show status of backup tablets
+#   ./backup-tablets.sh clean   # Remove backup tablet data directories (for fresh start)
 
 set -e
 
@@ -26,7 +27,7 @@ BACKUP_SERVICES=(
 )
 
 usage() {
-    echo "Usage: $0 {up|down|stop|restart|status}"
+    echo "Usage: $0 {up|down|stop|restart|status|clean}"
     echo ""
     echo "Commands:"
     echo "  up      - Start backup tablets"
@@ -34,6 +35,7 @@ usage() {
     echo "  stop    - Stop backup tablets (keep containers)"
     echo "  restart - Restart backup tablets"
     echo "  status  - Show status of backup tablets"
+    echo "  clean   - Remove backup tablet data directories (for fresh start)"
     exit 1
 }
 
@@ -107,6 +109,43 @@ case "${1:-}" in
     status)
         echo "Backup tablets status:"
         docker compose ps "${BACKUP_SERVICES[@]}"
+        ;;
+    clean)
+        echo "Cleaning backup tablet data directories..."
+        # Tablet UIDs for backup tablets
+        BACKUP_TABLET_UIDS=(
+            102   # user_shard1_backup
+            602   # user_shard2_backup
+            202   # article_shard1_backup
+            712   # article_shard2_backup
+            302   # read_shard1_backup
+            802   # read_shard2_backup
+            402   # beread_shard1_backup
+            912   # beread_shard2_backup
+            502   # popularrank_shard1_backup
+            1002  # popularrank_shard2_backup
+            1012  # popularrank_shard3_backup
+        )
+        
+        # Remove data directories from running containers
+        for i in "${!BACKUP_SERVICES[@]}"; do
+            service="${BACKUP_SERVICES[$i]}"
+            # Skip vtgate_cell3 (index 0)
+            if [[ "$service" == "vtgate_cell3" ]]; then
+                continue
+            fi
+            uid="${BACKUP_TABLET_UIDS[$((i-1))]}"
+            printf -v tablet_dir 'vt_%010d' "$uid"
+            echo "  Cleaning $service ($tablet_dir)..."
+            docker compose exec -T "$service" rm -rf "/vt/vtdataroot/$tablet_dir" 2>/dev/null || true
+        done
+        
+        # Stop and remove containers to ensure clean state
+        echo "Removing backup tablet containers..."
+        docker compose stop "${BACKUP_SERVICES[@]}" 2>/dev/null || true
+        docker compose rm -f "${BACKUP_SERVICES[@]}" 2>/dev/null || true
+        
+        echo "Backup tablet data cleaned. Run './backup-tablets.sh up' for a fresh start."
         ;;
     *)
         usage

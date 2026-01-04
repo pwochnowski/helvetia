@@ -15,6 +15,7 @@ vthost=${VTHOST:-`hostname -i`}
 sleeptime=${SLEEPTIME:-'0'}
 uid=${TABLET_UID:?'TABLET_UID is required'}
 external=${EXTERNAL_DB:-0}
+restore_from_backup=${RESTORE_FROM_BACKUP:-0}
 
 # If DB is not explicitly set, we default to behaviour of prefixing with vt_
 [ $external = 0 ] && db_name=${DB:-"vt_$keyspace"} ||  db_name=${DB:-"$keyspace"}
@@ -52,25 +53,67 @@ export DB_NAME=$db_name
 echo "Removing $VTDATAROOT/$tablet_dir/{mysql.sock,mysql.sock.lock}..."
 rm -rf $VTDATAROOT/$tablet_dir/{mysql.sock,mysql.sock.lock}
 
-# Create mysql instances
-echo "Initing mysql for tablet: $uid cell: $CELL keyspace: $keyspace shard: $shard"
-$VTROOT/bin/mysqlctld \
-  --init-db-sql-file=$init_db_sql_file \
-  --logtostderr=true \
-  --tablet-uid=$uid \
-  &
+if [ "$restore_from_backup" = "1" ]; then
+  # For backup tablets: run mysqlctld without init_db.sql so vttablet can restore from backup
+  echo "Backup tablet mode: starting mysqlctld without init_db.sql"
+  mysqlctld_args="--logtostderr=true --tablet-uid=$uid"
+  echo "Starting mysqlctld for tablet: $uid cell: $CELL keyspace: $keyspace shard: $shard"
+  eval $VTROOT/bin/mysqlctld $mysqlctld_args &
+
+  # Wait for mysqlctld to create the my.cnf file
+  mycnf_file="$VTDATAROOT/$tablet_dir/my.cnf"
+  echo "Waiting for mysqlctld to create $mycnf_file..."
+  max_wait=120
+  waited=0
+  while [ ! -f "$mycnf_file" ] && [ $waited -lt $max_wait ]; do
+    sleep 2
+    waited=$((waited + 2))
+    echo "  Waited ${waited}s for my.cnf..."
+  done
+
+  if [ ! -f "$mycnf_file" ]; then
+    echo "ERROR: my.cnf was not created after ${max_wait}s. mysqlctld may have failed."
+    exit 1
+  fi
+  echo "my.cnf found after ${waited}s"
+  
+  tablet_args="--init-db-name-override $DB_NAME \
+                --init-tablet-type $tablet_type \
+                --enable-replication-reporter=true \
+                --restore-from-backup"
+else
+  # For primary/replica tablets: use mysqlctld to init and manage MySQL
+  mysqlctld_args="--init-db-sql-file=$init_db_sql_file --logtostderr=true --tablet-uid=$uid"
+  echo "Starting mysqlctld for tablet: $uid cell: $CELL keyspace: $keyspace shard: $shard"
+  eval $VTROOT/bin/mysqlctld $mysqlctld_args &
+
+  # Wait for mysqlctld to create the my.cnf file (required before vttablet can start)
+  mycnf_file="$VTDATAROOT/$tablet_dir/my.cnf"
+  echo "Waiting for mysqlctld to create $mycnf_file..."
+  max_wait=120
+  waited=0
+  while [ ! -f "$mycnf_file" ] && [ $waited -lt $max_wait ]; do
+    sleep 2
+    waited=$((waited + 2))
+    echo "  Waited ${waited}s for my.cnf..."
+  done
+
+  if [ ! -f "$mycnf_file" ]; then
+    echo "ERROR: my.cnf was not created after ${max_wait}s. mysqlctld may have failed."
+    exit 1
+  fi
+  echo "my.cnf found after ${waited}s"
+
+  tablet_args="--init-db-name-override $DB_NAME \
+                --init-tablet-type $tablet_type \
+                --enable-replication-reporter=true"
+fi
 
 sleep $sleeptime
 
 # Create the cell
 # https://vitess.io/blog/2020-04-27-life-of-a-cluster/
 $VTROOT/bin/vtctldclient --server vtctld:$GRPC_PORT AddCellInfo --root vitess/$CELL --server-address consul1:8500 $CELL || true
-
-# Set tablet args
-tablet_args="--init-db-name-override $DB_NAME \
-              --init-tablet-type $tablet_type \
-              --enable-replication-reporter=true \
-              --restore-from-backup"
 
 echo "Starting vttablet $alias for $keyspace/$shard..."
 exec $VTROOT/bin/vttablet \
