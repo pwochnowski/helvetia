@@ -68,27 +68,8 @@ load_schema_for_keyspace() {
     return 1
   fi
 
-  # Apply schema files
-  for schema_file in $schema_files; do
-    echo "Applying schema ${schema_file} to ${keyspace}..."
-    schema_attempt=0
-    schema_max=30
-    while [ $schema_attempt -lt $schema_max ]; do
-      if vtctldclient --server vtctld_dc2:${GRPC_PORT} ApplySchema --sql-file /script/tables/${schema_file} $keyspace 2>/dev/null || \
-         vtctldclient --server vtctld_dc2:${GRPC_PORT} ApplySchema --sql "$(cat /script/tables/${schema_file})" $keyspace 2>/dev/null; then
-        echo "✓ Successfully applied schema ${schema_file}"
-        break
-      fi
-      schema_attempt=$((schema_attempt + 1))
-      echo "  Schema attempt $schema_attempt failed, retrying..."
-      sleep 3
-    done
-
-    if [ $schema_attempt -eq $schema_max ]; then
-      echo "✗ Failed to apply schema ${schema_file} after ${schema_max} attempts"
-      return 1
-    fi
-  done
+  # Skip DDL schema - tables already exist from backup restore
+  echo "Skipping DDL schema (tables restored from backup)"
 
   # Apply VSchema
   echo "Applying VSchema ${vschema_file} to ${keyspace}..."

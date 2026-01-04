@@ -494,6 +494,12 @@ async function submitNewEntry() {
     // Add timestamp
     data.timestamp = Date.now();
     
+    // Generate random id for sharding (required by Vitess for sharded tables)
+    // Using a large random number to avoid collisions
+    if (currentTable === 'users' || currentTable === 'articles' || currentTable === 'reads') {
+        data.id = Math.floor(Math.random() * 900000000) + 100000000;  // 9-digit random id
+    }
+    
     try {
         showStatus('Creating entry...', 'loading');
         await createData(currentTable, data);
