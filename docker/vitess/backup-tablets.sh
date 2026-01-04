@@ -37,8 +37,33 @@ usage() {
     exit 1
 }
 
+KEYSPACES=(
+    user_keyspace
+    article_keyspace
+    read_keyspace
+    beread_keyspace
+    popularrank_keyspace
+)
+
 case "${1:-}" in
     up)
+        echo "Setting up cell3 in topology..."
+        # Add cell3 info to topology (ignore error if already exists)
+        docker compose exec -T vtctld /vt/bin/vtctldclient --server localhost:15999 \
+            AddCellInfo --root vitess/cell3 --server-address consul1:8500 cell3 2>/dev/null || true
+        
+        # Rebuild keyspace graph for cell3
+        for keyspace in "${KEYSPACES[@]}"; do
+            echo "  Rebuilding keyspace graph for $keyspace..."
+            docker compose exec -T vtctld /vt/bin/vtctldclient --server localhost:15999 \
+                RebuildKeyspaceGraph --cells=cell3 "$keyspace" 2>/dev/null || true
+        done
+        
+        # Rebuild VSchema graph for cell3
+        echo "  Rebuilding VSchema graph..."
+        docker compose exec -T vtctld /vt/bin/vtctldclient --server localhost:15999 \
+            RebuildVSchemaGraph --cells=cell3 2>/dev/null || true
+        
         echo "Starting backup tablets..."
         docker compose up -d "${BACKUP_SERVICES[@]}"
         ;;
@@ -46,6 +71,30 @@ case "${1:-}" in
         echo "Stopping and removing backup tablets..."
         docker compose stop "${BACKUP_SERVICES[@]}"
         docker compose rm -f "${BACKUP_SERVICES[@]}"
+        echo "Removing backup tablets from topology..."
+        BACKUP_TABLET_ALIASES=(
+            cell3-0000000102
+            cell3-0000000602
+            cell3-0000000202
+            cell3-0000000712
+            cell3-0000000302
+            cell3-0000000802
+            cell3-0000000402
+            cell3-0000000912
+            cell3-0000000502
+            cell3-0000001002
+            cell3-0000001012
+        )
+        for alias in "${BACKUP_TABLET_ALIASES[@]}"; do
+            docker compose exec -T vtctld /vt/bin/vtctldclient --server localhost:15999 \
+                DeleteTablets --allow-primary "$alias" 2>/dev/null || true
+        done
+        echo "Backup tablets removed from topology."
+        
+        echo "Removing cell3 from topology..."
+        docker compose exec -T vtctld /vt/bin/vtctldclient --server localhost:15999 \
+            DeleteCellInfo --force cell3 2>/dev/null || true
+        echo "Cell3 removed from topology."
         ;;
     stop)
         echo "Stopping backup tablets..."
